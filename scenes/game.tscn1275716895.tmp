@@ -1,6 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://cvquosur8j5gd"]
+[gd_scene load_steps=5 format=3 uid="uid://cvquosur8j5gd"]
 
 [ext_resource type="Script" uid="uid://dvqtl7jib4oti" path="res://scenes/game.gd" id="1_uwrxv"]
+[ext_resource type="PackedScene" uid="uid://chlj7j48402py" path="res://scenes/piece.tscn" id="2_yqjtg"]
+[ext_resource type="Texture2D" uid="uid://be5o0imxxer4b" path="res://textures/B.png" id="3_lnu2h"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_lbhrr"]
+size = Vector2(480, 960)
 
 [node name="Game" type="Control"]
 layout_mode = 3
@@ -11,6 +16,20 @@ offset_right = -4.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_uwrxv")
+
+[node name="Piece" parent="." instance=ExtResource("2_yqjtg")]
+
+[node name="Back2" type="Sprite2D" parent="Piece"]
+scale = Vector2(0.05, 0.05)
+texture = ExtResource("3_lnu2h")
+
+[node name="Front2" type="Sprite2D" parent="Piece"]
+
+[node name="Area2D2" type="Area2D" parent="Piece"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Piece/Area2D2"]
+scale = Vector2(0.05, 0.05)
+shape = SubResource("RectangleShape2D_lbhrr")
 
 [node name="Board" type="Control" parent="."]
 layout_mode = 1

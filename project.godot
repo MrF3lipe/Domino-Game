@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Domino online"
-run/main_scene="uid://cvquosur8j5gd"
+run/main_scene="uid://o24s7hsbsapl"
 config/features=PackedStringArray("4.4", "Mobile")
 config/icon="res://icon.svg"
 config/main_scene="uid://chlj7j48402py"

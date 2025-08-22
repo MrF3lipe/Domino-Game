@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://o24s7hsbsapl"]
+
+[ext_resource type="Script" uid="uid://b56htoib1tnfe" path="res://scenes/main_menu.gd" id="1_l6cm7"]
+[ext_resource type="PackedScene" uid="uid://bs70c3xljbhbl" path="res://scenes/menu.tscn" id="2_ekxnf"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_l6cm7")
+
+[node name="Menu" parent="." instance=ExtResource("2_ekxnf")]
+title = "Menu"
+initial_position = 4

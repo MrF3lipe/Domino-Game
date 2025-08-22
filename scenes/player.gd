@@ -45,19 +45,23 @@ func set_turn(state: bool, board_extremes: Array):
 	turn = state
 	if turn and ai:
 		ai_turn(board_extremes)
-	else:
-		
+	elif turn and !ai:
+		self.connect("piece_pressed",play_turn)
+		#Hacer esperar al programa hasta q el usuario seleccione la ficha
+		self.disconnect("piece_pressed",play_turn)
+
+func play_turn(left: int,right: int):
+	print(left,right)
 
 func ai_turn(board_extremes: Array):
-	if not ai or not turn:
-		return
 	var possible = []
 	
 	for piece in pieces:
-		if piece.left == piece.right and board_extremes.is_empty():
-			possible.append([piece, 'D'])
-		elif board_extremes.is_empty():
-			possible.append([piece, 'N'])
+		if board_extremes.is_empty():
+			if piece.left == piece.right:
+				possible.append([piece, 'D'])
+			else:
+				possible.append([piece, 'N'])
 		else:
 			if piece.left == piece.right and board_extremes[0] == piece.left:
 				possible.append([piece, 'LD'])
@@ -115,7 +119,7 @@ func play_piece(piece: Piece, type: String):
 
 func calculate_hand_points() -> int:
 	var total = 0
-	for piece in get_children():
+	for piece in pieces:
 		total += piece.left + piece.right
 	return total
 

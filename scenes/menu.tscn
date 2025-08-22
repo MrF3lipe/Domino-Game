@@ -1,0 +1,34 @@
+[gd_scene load_steps=2 format=3 uid="uid://bs70c3xljbhbl"]
+
+[ext_resource type="Script" uid="uid://x5sipvdlxrbk" path="res://scenes/menu.gd" id="1_yqeox"]
+
+[node name="Menu" type="Window"]
+auto_translate_mode = 1
+initial_position = 1
+size = Vector2i(700, 500)
+script = ExtResource("1_yqeox")
+
+[node name="PlayButton" type="Button" parent="."]
+offset_left = 294.0
+offset_top = 74.0
+offset_right = 410.0
+offset_bottom = 115.0
+text = "Jugar"
+
+[node name="OptionsButton" type="Button" parent="."]
+offset_left = 294.0
+offset_top = 133.0
+offset_right = 410.0
+offset_bottom = 174.0
+text = "Opciones"
+
+[node name="QuitButton" type="Button" parent="."]
+offset_left = 294.0
+offset_top = 198.0
+offset_right = 410.0
+offset_bottom = 239.0
+text = "Salir"
+
+[connection signal="pressed" from="PlayButton" to="." method="_on_play_button_pressed"]
+[connection signal="pressed" from="OptionsButton" to="." method="_on_options_button_pressed"]
+[connection signal="pressed" from="QuitButton" to="." method="_on_quit_button_pressed"]

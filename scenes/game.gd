@@ -27,34 +27,12 @@ func _ready():
 	randomize()
 	#get_window().min_size = Vector2(800, 800)
 	#get_window().size = Vector2(800, 800)
-
+	
 	await get_tree().process_frame
 	
-	show_game_start_message()
-
-func show_game_start_message():
-	var toggle = CheckBox.new()
-	var popup = AcceptDialog.new()
 	
-	toggle.text = "Solo IAs"
-	
-	toggle.toggled.connect(_on_toggle_change)
-	
-	popup.add_child(toggle)
-	popup.dialog_text = "message"
-	popup.title = "Fin del Juego"
-	popup.size = Vector2(400, 300)
-	add_child(popup)
-	popup.popup_centered()
-	
-	popup.get_ok_button().text = "Jugar"
-	popup.confirmed.connect(_on_play_pressed)
 
-
-func _on_toggle_change(button_pressed: bool):
-	playing = !button_pressed
-
-func _on_play_pressed():
+func play_pressed():
 	
 	setup_pieces()
 	setup_players()

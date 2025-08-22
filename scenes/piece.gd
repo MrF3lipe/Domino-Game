@@ -10,6 +10,8 @@ extends Node2D
 
 var piece_scale = 0.07
 
+signal piece_pressed(left,right)
+
 var size: Vector2:
 	get:
 		if front and front.texture:
@@ -17,6 +19,7 @@ var size: Vector2:
 		return Vector2(50, 100)
 
 func _ready():
+	self.connect("MOUSE_BUTTON_LEFT",pressed)
 	load_piece()
 
 func load_piece():
@@ -25,7 +28,13 @@ func load_piece():
 	
 	back.texture = load("res://textures/B.png" % [left, right])
 	back.scale = Vector2(piece_scale, piece_scale)
-	
+
+func pressed():
+	piece_pressed.emit(left,right)
+
+func dbg(a):
+	print(a)
+
 func set_values(l = left, r = right, s = piece_scale):
 	left = l
 	right = r
