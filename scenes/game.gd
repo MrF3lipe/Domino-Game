@@ -66,8 +66,6 @@ func create_players():
 		p["node"].add_child(player)
 		player.piece_played.connect(_on_piece_played)
 		player.turn_passed.connect(change_turn)
-		
-		print(p)
 
 func position_players():
 	var viewport_size = get_viewport_rect().size
@@ -323,7 +321,7 @@ func piece_on_board(piece: Piece, type: String):
 		piece.position = piece_position
 		piece.rotation_degrees = 0
 	
-	debug_visual(piece, type, base_piece, piece_position)
+	#debug_visual(piece, type, base_piece, piece_position)
 
 func debug_visual(piece: Piece, type: String, base_piece: Piece, piece_position: Vector2):
 	if type != 'D' and type != 'N':

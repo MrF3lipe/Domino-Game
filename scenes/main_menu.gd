@@ -5,7 +5,6 @@ extends Control
 func _ready():
 	show_game_start_message()
 	menu.play_button_pressed.connect(_on_play_pressed)
-	
 
 func show_game_start_message():
 	
