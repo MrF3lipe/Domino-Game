@@ -29,8 +29,7 @@ func _ready():
 	#get_window().size = Vector2(800, 800)
 	
 	await get_tree().process_frame
-	
-	
+	play_pressed()
 
 func play_pressed():
 	
