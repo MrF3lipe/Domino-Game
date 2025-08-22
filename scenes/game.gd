@@ -7,7 +7,7 @@ extends Control
 @export var piece_spacing := 50
 @export var length = 300
 @export var width = 100
-@export var piece_scale = 0.07
+@export var piece_scale = 0.1
 
 @onready var board: Control = $Board
 @onready var players_container: Control = $Players
@@ -24,7 +24,7 @@ var game_ended := false
 var playing = true
 
 func _ready():
-	
+	randomize()
 	#get_window().min_size = Vector2(800, 800)
 	#get_window().size = Vector2(800, 800)
 
@@ -33,10 +33,12 @@ func _ready():
 	show_game_start_message()
 
 func show_game_start_message():
-	var popup = AcceptDialog.new()
 	var toggle = CheckBox.new()
+	var popup = AcceptDialog.new()
 	
 	toggle.text = "Solo IAs"
+	
+	toggle.toggled.connect(_on_toggle_change)
 	
 	popup.add_child(toggle)
 	popup.dialog_text = "message"
@@ -47,7 +49,10 @@ func show_game_start_message():
 	
 	popup.get_ok_button().text = "Jugar"
 	popup.confirmed.connect(_on_play_pressed)
-	
+
+
+func _on_toggle_change(button_pressed: bool):
+	playing = !button_pressed
 
 func _on_play_pressed():
 	
@@ -55,17 +60,16 @@ func _on_play_pressed():
 	setup_players()
 	start_game()
 
-func setup_pieces():
-	generate_all_pieces()
-	shuffle_pieces()
-
 func setup_players():
 	create_players()
 	position_players()
 	deal_pieces()
 
+func setup_pieces():
+	generate_all_pieces()
+	shuffle_pieces()
+
 func create_players():
-	print(playing)
 	var player_scene = preload("res://scenes/player.tscn")
 	var players = [
 		{"node": player_top, "name": "Top", "ai": true, "vertical": false, "reversed": false},
@@ -141,16 +145,6 @@ func configure_player_container(container: Control, player_position: String):
 	container.offset_right = 0
 	container.offset_bottom = 0
 
-func generate_all_pieces():
-	for left in range(7):
-		for right in range(left, 7):
-			var piece = preload("res://scenes/piece.tscn").instantiate()
-			piece.set_values(left, right, piece_scale)
-			all_pieces.append(piece)
-
-func shuffle_pieces():
-	all_pieces.shuffle()
-
 func deal_pieces():
 	var player_configs = [
 		{"node": player_top},
@@ -177,13 +171,20 @@ func deal_pieces():
 	
 		player.reorganize_pieces()
 
+func generate_all_pieces():
+	for left in range(7):
+		for right in range(left, 7):
+			var piece = preload("res://scenes/piece.tscn").instantiate()
+			piece.set_values(left, right, piece_scale)
+			all_pieces.append(piece)
+
+func shuffle_pieces():
+	all_pieces.shuffle()
+
 func start_game():
 	game_started = true
-	current_player_index = determine_first_player()
+	current_player_index = randi() % 4
 	begin_player_turn(current_player_index)
-
-func determine_first_player() -> int:
-	return 2
 
 func begin_player_turn(player_index: int):
 	var player = get_player_by_index(player_index)
@@ -348,7 +349,7 @@ func piece_on_board(piece: Piece, type: String):
 	debug_visual(piece, type, base_piece, piece_position)
 
 func debug_visual(piece: Piece, type: String, base_piece: Piece, piece_position: Vector2):
-	if type != 'D':
+	if type != 'D' and type != 'N':
 		print("\nCálculo de posición: ", str(piece.left), " : ", str(piece.right),
 		"\nTipo: ", type,
 		"\nBase: ", str(base_piece.left), " : ", str(base_piece.right),

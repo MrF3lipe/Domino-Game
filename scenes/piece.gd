@@ -3,16 +3,17 @@ extends Node2D
 
 @export var left: int = 0
 @export var right: int = 5
-@export var piece_scale: int = 1
 
 @onready var front: Sprite2D = $Front
 @onready var back: Sprite2D = $Back
 @onready var area: Area2D = $Area2D
 
+var piece_scale = 0.07
+
 var size: Vector2:
 	get:
 		if front and front.texture:
-			return front.texture.get_size() * scale
+			return front.texture.get_size() * piece_scale
 		return Vector2(50, 100)
 
 func _ready():

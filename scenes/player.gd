@@ -6,6 +6,7 @@ signal turn_passed
 
 @export var ai: bool = false
 @export var hand_visible: bool = true
+@export var piece_spacing: float = 60
 @export var vertical: bool = false
 @export var reversed: bool = false
 
@@ -13,7 +14,6 @@ signal turn_passed
 
 var pieces: Array[Piece] = []
 var turn: bool = false
-var piece_spacing
 
 func _ready():
 	update_pieces_visibility()
@@ -26,11 +26,10 @@ func update_pieces_visibility():
 func add_piece(piece: Piece):
 	pieces.append(piece)
 	hand.add_child(piece)
-	piece.position = Vector2(pieces.size() * piece.piece_scale, 0)
+	piece.position = Vector2(pieces.size() * piece_spacing, 0)
 	update_pieces_visibility()
 
 func reorganize_pieces():
-	piece_spacing = pieces[0].piece_scale
 	for i in range(pieces.size()):
 		if vertical:
 			var y_pos = i * piece_spacing
@@ -46,6 +45,8 @@ func set_turn(state: bool, board_extremes: Array):
 	turn = state
 	if turn and ai:
 		ai_turn(board_extremes)
+	else:
+		
 
 func ai_turn(board_extremes: Array):
 	if not ai or not turn:
@@ -114,7 +115,7 @@ func play_piece(piece: Piece, type: String):
 
 func calculate_hand_points() -> int:
 	var total = 0
-	for piece in pieces:
+	for piece in get_children():
 		total += piece.left + piece.right
 	return total
 
