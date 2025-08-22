@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://uo4mu18h6ton"]
+
+[ext_resource type="Script" uid="uid://bkq2jloj17q25" path="res://scenes/options.gd" id="1_c2u1v"]
+
+[node name="Options" type="Window"]
+auto_translate_mode = 1
+title = "Options"
+initial_position = 4
+size = Vector2i(700, 500)
+visible = false
+script = ExtResource("1_c2u1v")
