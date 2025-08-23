@@ -14,9 +14,25 @@ signal turn_passed
 
 var pieces: Array[Piece] = []
 var turn: bool = false
+var piece_selected: Piece = null
 
 func _ready():
 	update_pieces_visibility()
+	
+func _input(event):
+	if not ai and event is InputEventMouseButton:
+		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			var mouse_pos = get_global_mouse_position()
+			for piece in pieces:
+				var piece_global_pos = piece.global_position
+				var piece_rect = Rect2(piece_global_pos - piece.size/2, piece.size)
+				
+				if piece_rect.has_point(mouse_pos):
+					print(piece.left, ":", piece.right)
+					piece.increase()
+					piece_selected.decrease()
+					piece_selected = piece
+					break
 
 func update_pieces_visibility():
 	for piece in pieces:

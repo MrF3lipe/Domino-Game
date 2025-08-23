@@ -9,7 +9,6 @@ extends Node2D
 @onready var area: Area2D = $Area2D
 
 var piece_scale = 0.07
-var selected = false
 
 var size: Vector2:
 	get:
@@ -18,12 +17,12 @@ var size: Vector2:
 		return Vector2(50, 100)
 
 func _ready():
-	area.input_pickable = true
+	#area.input_pickable = true
 	load_piece()
 	
-	area.connect("input_event", _on_area_2d_input_event)
-	area.connect("mouse_entered", _on_area_2d_mouse_entered)
-	area.connect("mouse_exited", _on_area_2d_mouse_exited)
+	#area.connect("input_event", _on_area_2d_input_event)
+	#area.connect("mouse_entered", _on_area_2d_mouse_entered)
+	#area.connect("mouse_exited", _on_area_2d_mouse_exited)
 
 func load_piece():
 	front.texture = load("res://textures/%d-%d B.png" % [left, right])
@@ -37,27 +36,26 @@ func set_values(l = left, r = right, s = piece_scale):
 	right = r
 	piece_scale = s
 
-func _on_area_2d_input_event(viewport: Node, event: InputEvent, shape_idx: int) -> void:
-	if event is InputEventMouseButton:
-		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			selected = true
-			print(left, ':', right)
-
-func _on_area_2d_mouse_entered() -> void:
-	increase()
-	print('in')
-
-func _on_area_2d_mouse_exited() -> void:
-	decrease()
-	print('out')
-
+#func _on_area_2d_input_event(viewport: Node, event: InputEvent, shape_idx: int) -> void:
+	#if event is InputEventMouseButton:
+		#if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			#selected = true
+			#print(left, ':', right)
+#
+#func _on_area_2d_mouse_entered() -> void:
+	#increase()
+	#print('in')
+#
+#func _on_area_2d_mouse_exited() -> void:
+	#decrease()
+	#print('out')
+#
 func increase():
 	var tween = create_tween()
 	tween.tween_property(self, "scale", Vector2(1.2, 1.2), 0.2)\
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 func decrease():
-	if not selected:
-		var tween = create_tween()
-		tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.2)\
-			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	var tween = create_tween()
+	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.2)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
