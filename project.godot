@@ -16,6 +16,10 @@ config/features=PackedStringArray("4.4", "Mobile")
 config/icon="res://icon.svg"
 config/main_scene="uid://chlj7j48402py"
 
+[autoload]
+
+Global="*res://scenes/Global.gd"
+
 [input]
 
 click={

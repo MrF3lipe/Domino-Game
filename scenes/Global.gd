@@ -1,0 +1,5 @@
+class_name autoload
+extends Node2D
+
+var board_extremes: Array = []
+var playing = true

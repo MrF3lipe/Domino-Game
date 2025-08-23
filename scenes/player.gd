@@ -2,6 +2,7 @@ class_name Player
 extends Node2D
 
 signal piece_played(piece, type)
+signal piece_pressed(piece, type)
 signal turn_passed
 
 @export var ai: bool = false
@@ -9,6 +10,7 @@ signal turn_passed
 @export var piece_spacing: float = 60
 @export var vertical: bool = false
 @export var reversed: bool = false
+
 
 @onready var hand: Node2D = $Hand
 
@@ -19,34 +21,40 @@ var piece_selected: Piece = null
 func _ready():
 	update_pieces_visibility()
 	
-func _input(event):
-	if not ai and event is InputEventMouseButton:
+func _input(event):						#Acciones del jugador (seleccionar pieza)
+	if not ai and event is InputEventMouseButton and turn:
 		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			var mouse_pos = get_global_mouse_position()
+			var rised = false
 			for piece in pieces:
 				var piece_global_pos = piece.global_position
 				var piece_rect = Rect2(piece_global_pos - piece.size/2, piece.size)
 				
 				if piece_rect.has_point(mouse_pos):
-					print(piece.left, ":", piece.right)
-					piece.increase()
 					if piece_selected:
 						piece_selected.decrease()
+					piece.increase()
+					var type = calculate_type(piece,Global.board_extremes)
+					emit_signal("piece_pressed", piece, type)
 					piece_selected = piece
+					rised = true
 					break
+			if !rised and piece_selected:
+				piece_selected.decrease()
+				piece_selected = null
 
-func update_pieces_visibility():
+func update_pieces_visibility():		#Establece q cara es visible
 	for piece in pieces:
 		piece.get_node("Front").visible = hand_visible
 		piece.get_node("Back").visible = not hand_visible
 
-func add_piece(piece: Piece):
+func add_piece(piece: Piece):			#Añade pieza a la mano del jugador
 	pieces.append(piece)
 	hand.add_child(piece)
 	piece.position = Vector2(pieces.size() * piece_spacing, 0)
 	update_pieces_visibility()
 
-func reorganize_pieces():
+func reorganize_pieces():				#Reorganiza las piezas de la mano del jugador
 	for i in range(pieces.size()):
 		if vertical:
 			var y_pos = i * piece_spacing
@@ -58,53 +66,49 @@ func reorganize_pieces():
 			pieces[i].position = Vector2(i * piece_spacing, 0)
 			pieces[i].rotation_degrees = 0
 
-func set_turn(state: bool, board_extremes: Array):
+func set_turn(state: bool, board_extremes: Array):		#Comienza el turno del jugador
 	turn = state
 	if turn and ai:
 		ai_turn(board_extremes)
 	elif turn and !ai:
-		self.connect("piece_pressed",play_turn)
-		#Hacer esperar al programa hasta q el usuario seleccione la ficha
-		self.disconnect("piece_pressed",play_turn)
+		pass
+		#print(board_extremes)
 
-func play_turn(left: int,right: int):
-	print(left,right)
-
-func ai_turn(board_extremes: Array):
+func ai_turn(board_extremes: Array):					#Comienza el turno de la IA
 	var possible = []
 	
 	for piece in pieces:
-		if board_extremes.is_empty():
-			if piece.left == piece.right:
-				possible.append([piece, 'D'])
-			else:
-				possible.append([piece, 'N'])
-		else:
-			if piece.left == piece.right and board_extremes[0] == piece.left:
-				possible.append([piece, 'LD'])
-
-			if piece.left == piece.right and board_extremes[3] == piece.right:
-				possible.append([piece, 'RD'])
-
-			if board_extremes[0] == piece.left and piece.left != piece.right:
-				possible.append([piece, 'LL'])
-			
-			if board_extremes[0] == piece.right and piece.left != piece.right:
-				possible.append([piece, 'LR'])
-				
-			if board_extremes[3] == piece.right and piece.left != piece.right:
-				possible.append([piece, 'RR'])
-			
-			if board_extremes[3] == piece.left and piece.left != piece.right:
-				possible.append([piece, 'RL'])
-
+		var type = calculate_type(piece, board_extremes)
+		possible.append([piece,type])
+		
 	if possible.is_empty():
 		emit_signal("turn_passed")
 	else:
 		var p = select_piece(possible)
 		play_piece(p[0], p[1])
 
-func select_piece(possible: Array) -> Array:
+func calculate_type(piece: Piece, board_extremes):		#Calcula el tipo de la pieza
+	if board_extremes.is_empty():
+		if piece.left == piece.right:
+			return 'D'
+		else:
+			return 'N'
+	else:
+		if piece.left == piece.right and board_extremes[0] == piece.left:
+			return 'LD'
+		if piece.left == piece.right and board_extremes[3] == piece.right:
+			return 'RD'
+		if board_extremes[0] == piece.left and piece.left != piece.right:
+			return 'LL'
+		if board_extremes[0] == piece.right and piece.left != piece.right:
+			return 'LR'
+		if board_extremes[3] == piece.right and piece.left != piece.right:
+			return 'RR'
+		if board_extremes[3] == piece.left and piece.left != piece.right:
+			return 'RL'
+	return 'I'
+
+func select_piece(possible: Array) -> Array:			#Algoritmo para seleccion de la IA 
 	var weights = {
 		'RD': 1.0,
 		'RR': 1.0,
@@ -113,7 +117,8 @@ func select_piece(possible: Array) -> Array:
 		'LL': 1.0,
 		'LR': 1.0,
 		'D': 2.5,
-		'N': 0.2
+		'N': 0.2,
+		'I': 0
 	}
 	
 	for i in range(possible.size()):
@@ -126,7 +131,7 @@ func select_piece(possible: Array) -> Array:
 
 	return max
 
-func play_piece(piece: Piece, type: String):
+func play_piece(piece: Piece, type: String):			#Juega la pieza seleccionada
 	await get_tree().create_timer(1.0).timeout
 	if piece in pieces:
 		pieces.erase(piece)
@@ -134,13 +139,13 @@ func play_piece(piece: Piece, type: String):
 		emit_signal("piece_played", piece, type)
 		reorganize_pieces()
 
-func calculate_hand_points() -> int:
+func calculate_hand_points() -> int:					#Calcula los puntos en caso de empate
 	var total = 0
 	for piece in pieces:
 		total += piece.left + piece.right
 	return total
 
-func can_play(left_value: int, right_value: int) -> bool:
+func can_play(left_value: int, right_value: int) -> bool:		#calcula si el jugador tiene algun movimiento valido
 	for piece in pieces:
 		if piece.left == left_value or piece.right == left_value or \
 		   piece.left == right_value or piece.right == right_value:
