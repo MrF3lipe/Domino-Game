@@ -27,22 +27,25 @@ func _ready():
 	await get_tree().process_frame
 	play_pressed()
 
-func play_pressed():			#Comienza una partida
-	
+# Comienza una partida
+func play_pressed():
 	setup_pieces()
 	setup_players()
 	start_game()
 
-func setup_players():			#Prepara los jugadores
+# Prepara los jugadores
+func setup_players():
 	create_players()
 	position_players()
 	deal_pieces()
 
-func setup_pieces():			#Prepara los jugadores
+# Prepara los jugadores
+func setup_pieces():
 	generate_all_pieces()
 	all_pieces.shuffle()
 
-func create_players():			#Crea la escena de cada jugador
+# Crea la escena de cada jugador
+func create_players():
 	var player_scene = preload("res://scenes/player.tscn")
 	var players = [
 		{"node": player_top, "name": "Top", "ai": true, "vertical": false, "reversed": false},
@@ -64,7 +67,8 @@ func create_players():			#Crea la escena de cada jugador
 		player.piece_pressed.connect(_on_piece_pressed)
 		player.turn_passed.connect(change_turn)
 
-func position_players():		#Posiciona a cada jugador
+# Posiciona a cada jugador
+func position_players():
 	var viewport_size = get_viewport_rect().size
 	margin = min(viewport_size.x, viewport_size.y) * 0.05
 
@@ -83,7 +87,8 @@ func position_players():		#Posiciona a cada jugador
 	player_left.pivot_offset = Vector2(player_left.size.x/2, player_left.size.y/2)
 	player_right.pivot_offset = Vector2(player_right.size.x/2, player_right.size.y/2)
 
-func configure_player_container(container: Control, player_position: String):		#Establece el cuadro de la mano
+# Establece el cuadro de la mano
+func configure_player_container(container: Control, player_position: String):
 	container.custom_minimum_size = Vector2(length, width)
 
 	match player_position:
@@ -117,14 +122,16 @@ func configure_player_container(container: Control, player_position: String):		#
 	container.offset_right = 0
 	container.offset_bottom = 0
 
-func generate_all_pieces():		#Crea las Piezas
+# Crea las piezas
+func generate_all_pieces():		
 	for left in range(7):
 		for right in range(left, 7):
 			var piece = preload("res://scenes/piece.tscn").instantiate()
 			piece.set_values(left, right, piece_scale)
 			all_pieces.append(piece)
 
-func deal_pieces():				#Reparte la piezas
+# Reparte la piezas
+func deal_pieces():				
 	var player_configs = [
 		{"node": player_top},
 		{"node": player_right},
@@ -150,23 +157,27 @@ func deal_pieces():				#Reparte la piezas
 	
 		player.reorganize_pieces()
 
-func start_game():				#Comienza el juego
+# Comienza el juego
+func start_game():
 	game_started = true
 	current_player_index = randi() % 4
 	begin_player_turn(current_player_index)
 
-func begin_player_turn(player_index: int):		#Comienza el turno del jugador segun indice
+# Comienza el turno del jugador segun indice
+func begin_player_turn(player_index: int):
 	var player = get_player_by_index(player_index)
 	if player:
 		Global.board_extremes = board_extremes
 		player.set_turn(true, board_extremes)
 
-func end_player_turn(player_index: int):		#Termina el turno del jugador segun indice
+# Termina el turno del jugador segun indice
+func end_player_turn(player_index: int):
 	var player = get_player_by_index(player_index)
 	if player:
 		player.set_turn(false, [])
 
-func get_player_by_index(index: int) -> Node:	#Obtiene el jugador segun indice
+# Obtiene el jugador segun indice
+func get_player_by_index(index: int) -> Node:
 	var players = [
 		player_top.get_child(0),
 		player_left.get_child(0),
@@ -175,7 +186,8 @@ func get_player_by_index(index: int) -> Node:	#Obtiene el jugador segun indice
 	]
 	return players[index] if index < players.size() else null
 
-func change_turn():				#Cambia el turno al siguiente jugador
+# Cambia el turno al siguiente jugador
+func change_turn():
 	if game_ended:
 		return
 
@@ -204,7 +216,8 @@ func change_turn():				#Cambia el turno al siguiente jugador
 	current_player_index = next_player_index
 	begin_player_turn(current_player_index)
 
-func end_game(winning_player_index: int, by_empty_hand: bool):		#Finaliza el juego
+# Finaliza el juego
+func end_game(winning_player_index: int, by_empty_hand: bool):		
 	game_ended = true
 
 	if by_empty_hand:
@@ -251,7 +264,8 @@ func end_game(winning_player_index: int, by_empty_hand: bool):		#Finaliza el jue
 	for i in range(total_players):
 		end_player_turn(i)
 
-func show_game_over_message(message: String):		#Muestra la pantalla de juego terminado
+# Muestra la pantalla de juego terminado
+func show_game_over_message(message: String):
 	var popup = AcceptDialog.new()
 	popup.dialog_text = message
 	popup.title = "Fin del Juego"
@@ -262,10 +276,12 @@ func show_game_over_message(message: String):		#Muestra la pantalla de juego ter
 	popup.get_ok_button().text = "Jugar de nuevo"
 	popup.confirmed.connect(_on_play_again_pressed)
 
-func _on_play_again_pressed():			#Reinicia el juego
+# Reinicia el juego
+func _on_play_again_pressed():
 	get_tree().reload_current_scene()
 
-func _on_piece_played(piece: Piece, type: String):			#Juega la pieza y pasa el turno al siguiente
+# Juega la pieza y pasa el turno al siguiente
+func _on_piece_played(piece: Piece, type: String):
 	board.add_child(piece)
 	piece.front.visible = true
 	piece.back.visible = false
@@ -273,17 +289,39 @@ func _on_piece_played(piece: Piece, type: String):			#Juega la pieza y pasa el t
 	update_board_extremes(piece, type)
 	change_turn()
 
-func _on_piece_pressed(piece: Piece, type: String):			#Muestra las posibilidades del jugador al seleccionar una pieza
-	var fake_piece = preload("res://scenes/piece.tscn").instantiate()
-	fake_piece.set_values(-1, -1, piece_scale)
+# Coloca los Sprites en la posiciones sugeridas
+func _on_piece_pressed(piece: Piece, type: String):
+	var possible_type = piece_on_board_unbound(piece, type)
 	
-	fake_piece.set_values(piece.left,piece.right)
-	var type2 = piece_on_board_unbound(fake_piece,type)
+	for t in possible_type:
+		print(t)
+		if t in ['RR', 'RL', 'RD']:
+			var right_posibility = Sprite2D.new()
+			right_posibility.name = "right_posibility"
+			right_posibility.texture = piece.back.texture
+			right_posibility.scale = piece.back.scale
+			right_posibility.centered = piece.back.centered
 	
-	print(type2)
-	print(piece.left, ":", piece.right)
+			right_posibility.position = piece_on_board(piece, t, true)
+			if t in ['RR', 'RL']:
+				right_posibility.rotation_degrees = 90
+			add_child(right_posibility)
+			right_posibility.add_to_group("possibility_sprites")
+		elif t in ['LR', 'LL', 'LD', 'D', 'N']:
+			var left_posibility = Sprite2D.new()
+			left_posibility.name = "left_posibility"
+			left_posibility.texture = piece.back.texture
+			left_posibility.scale = piece.back.scale
+			left_posibility.centered = piece.back.centered
+			
+			left_posibility.position = piece_on_board(piece, t, true)
+			if t in ['LR', 'LL', 'N']:
+				left_posibility.rotation_degrees = 90
+			add_child(left_posibility)
+			left_posibility.add_to_group("possibility_sprites")
 
-func piece_on_board(piece: Piece, type: String):			#Calcula la posicion de la pieza
+# Calcula la posicion de la pieza
+func piece_on_board(piece: Piece, type: String, reference = false):
 	var piece_position = Vector2(0, 0)
 	var base_piece = null
 	
@@ -302,37 +340,41 @@ func piece_on_board(piece: Piece, type: String):			#Calcula la posicion de la pi
 		else:
 			piece_position = base_piece.position - Vector2(piece.size.x + base_piece.size.x, 0)
 	
-	piece.position = piece_position
+	if reference == false:
+		piece.position = piece_position
 	
-	if type=='N' or type=='RR' or type=='LL':
-		piece.rotation_degrees = 90
-	elif type =='RL' or type=='LR':
-		piece.rotation_degrees = -90
+		if type=='D':
+			piece.rotation_degrees = 0
+		elif type=='N' or type=='RR' or type=='LL':
+			piece.rotation_degrees = 90
+		elif type =='RL' or type=='LR':
+			piece.rotation_degrees = -90
+	else:
+		return piece_position
 	
 	#debug_visual(piece, type, base_piece, piece_position)
 
-func piece_on_board_unbound(piece: Piece, type: String):	#Calcula las posibles posiciones de la pieza
-	
-	var posib: String
-	posib = ""
+# Calcula las posibles posiciones de la pieza
+func piece_on_board_unbound(piece: Piece, type: String):
+	var posib = []
 	if board_extremes.is_empty():
 		if piece.left == piece.right:
-			posib+='D'
+			posib.append('D')
 		else:
-			posib+='N'
+			posib.append('N')
 	else:
 		if piece.left == piece.right and board_extremes[0] == piece.left:
-			posib+='LD'
+			posib.append('LD')
 		if piece.left == piece.right and board_extremes[3] == piece.right:
-			posib+='RD'
+			posib.append('RD')
 		if board_extremes[0] == piece.left and piece.left != piece.right:
-			posib+='LL'
+			posib.append('LL')
 		if board_extremes[0] == piece.right and piece.left != piece.right:
-			posib+='LR'
+			posib.append('LR')
 		if board_extremes[3] == piece.right and piece.left != piece.right:
-			posib+='RR'
+			posib.append('RR')
 		if board_extremes[3] == piece.left and piece.left != piece.right:
-			posib+='RL'
+			posib.append('RL')
 	
 	return posib
 
@@ -347,7 +389,8 @@ func debug_visual(piece: Piece, type: String, base_piece: Piece, piece_position:
 		"\nRecorrido en x: ", str(piece.size.x + base_piece.size.x),
 		"\nPosición final: ", piece_position, " ", str(piece.rotation_degrees))
 
-func update_board_extremes(piece: Piece, type: String):		#Actualiza los extremos del tablero
+# Actualiza los extremos del tablero
+func update_board_extremes(piece: Piece, type: String):
 	if board_extremes.is_empty() or type == 'D' or type == 'N':
 		board_extremes = [piece.left, piece, piece, piece.right]
 	elif type == 'LL' or type == 'LR' or type == 'LD':
@@ -363,9 +406,11 @@ func update_board_extremes(piece: Piece, type: String):		#Actualiza los extremos
 			board_extremes[3] = piece.left
 		board_extremes[2] = piece
 
-func _notification(what):			#Notificaciones
+# Notificaciones
+func _notification(what):
 	if what == NOTIFICATION_RESIZED:
 		adjust_layout()
 
-func adjust_layout():				#Ajusta la pantalla
+# Ajusta la pantalla
+func adjust_layout():
 	pass
