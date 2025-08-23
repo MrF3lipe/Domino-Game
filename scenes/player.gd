@@ -30,7 +30,8 @@ func _input(event):
 				if piece_rect.has_point(mouse_pos):
 					print(piece.left, ":", piece.right)
 					piece.increase()
-					piece_selected.decrease()
+					if piece_selected:
+						piece_selected.decrease()
 					piece_selected = piece
 					break
 
