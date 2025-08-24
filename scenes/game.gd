@@ -9,6 +9,7 @@ extends Control
 @export var width = 100
 @export var piece_scale = 0.1
 
+@onready var pregame: Window = $pregame
 @onready var board: Control = $Board
 @onready var players_container: Control = $Players
 @onready var player_top: Control = $Players/PlayerTop
@@ -25,10 +26,12 @@ var game_ended := false
 func _ready():
 	randomize()
 	await get_tree().process_frame
-	play_pressed()
+	
+	pregame.visible = true
+	pregame.play_pressed.connect(on_play_pressed)
 
 # Comienza una partida
-func play_pressed():
+func on_play_pressed():
 	setup_pieces()
 	setup_players()
 	start_game()
@@ -190,7 +193,7 @@ func get_player_by_index(index: int) -> Node:
 func change_turn():
 	if game_ended:
 		return
-
+		
 	var current_player = get_player_by_index(current_player_index)
 	if current_player and current_player.pieces.size() == 0:
 		end_game(current_player_index, true)
@@ -288,29 +291,6 @@ func _on_piece_played(piece: Piece, type: String):
 	piece_on_board(piece, type)
 	update_board_extremes(piece, type)
 	change_turn()
-
-func _input(event):
-	if event is InputEventMouseButton:
-		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			var mouse_pos = get_global_mouse_position()
-			
-			for possibility in get_tree().get_nodes_in_group("possibility_areas"):
-				var sprite = possibility.get_node("Sprite2D")
-				if sprite and sprite.texture:
-					var texture_size = sprite.texture.get_size() * sprite.scale
-					
-					var piece_rect = Rect2(
-						possibility.global_position.x - texture_size.x / 2,
-						possibility.global_position.y - texture_size.y / 2,
-						texture_size.x,
-						texture_size.y
-					)
-					
-					if piece_rect.has_point(mouse_pos):
-						var piece = possibility.get_meta("piece")
-						var type = possibility.get_meta("position_type")
-						_on_piece_played(piece, type)
-						break
 
 # Coloca los Sprites en la posiciones sugeridas
 func _on_piece_pressed(piece: Piece, type: String):

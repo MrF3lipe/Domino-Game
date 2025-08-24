@@ -1,0 +1,31 @@
+[gd_scene load_steps=2 format=3 uid="uid://bh8w2mwfgynfl"]
+
+[ext_resource type="Script" uid="uid://de8y4aypdxij8" path="res://scenes/pregame.gd" id="1_o02u6"]
+
+[node name="pregame" type="Window"]
+auto_translate_mode = 1
+title = "Configuración de Partida"
+initial_position = 1
+size = Vector2i(400, 300)
+script = ExtResource("1_o02u6")
+
+[node name="Play" type="Button" parent="."]
+anchors_preset = -1
+anchor_left = 0.39
+anchor_top = 0.833333
+anchor_right = 0.6075
+anchor_bottom = 0.936667
+grow_horizontal = 2
+grow_vertical = 0
+text = "Comenzar"
+metadata/_edit_use_anchors_ = true
+
+[node name="IA_toggled" type="CheckButton" parent="."]
+offset_left = 9.0
+offset_top = 170.0
+offset_right = 164.0
+offset_bottom = 201.0
+text = "Partida de IAs"
+
+[connection signal="pressed" from="Play" to="." method="_on_play_pressed"]
+[connection signal="toggled" from="IA_toggled" to="." method="_on_ia_toggled_toggled"]

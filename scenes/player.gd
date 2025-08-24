@@ -20,7 +20,7 @@ var piece_selected: Piece = null
 
 func _ready():
 	update_pieces_visibility()
-	
+
 func _input(event):						#Acciones del jugador (seleccionar pieza)
 	if not ai and event is InputEventMouseButton and turn:
 		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -45,6 +45,26 @@ func _input(event):						#Acciones del jugador (seleccionar pieza)
 				piece_selected.decrease()
 				clear_possibility_areas()
 				piece_selected = null
+				
+			for possibility in get_tree().get_nodes_in_group("possibility_areas"):
+				var sprite = possibility.get_node("Sprite2D")
+				if sprite and sprite.texture:
+					var texture_size = sprite.texture.get_size() * sprite.scale
+					
+					var piece_rect = Rect2(
+						possibility.global_position.x - texture_size.x / 2,
+						possibility.global_position.y - texture_size.y / 2,
+						texture_size.x,
+						texture_size.y
+					)
+					
+					if piece_rect.has_point(mouse_pos):
+						var piece = possibility.get_meta("piece")
+						var type = possibility.get_meta("position_type")
+						
+						play_piece(piece, type)
+						
+						break
 
 # Eliminar todos los sprites del grupo
 func clear_possibility_areas():
@@ -75,22 +95,15 @@ func reorganize_pieces():				#Reorganiza las piezas de la mano del jugador
 
 func set_turn(state: bool, board_extremes: Array):		#Comienza el turno del jugador
 	turn = state
-	if turn and ai:
-		ai_turn(board_extremes)
-	elif turn and !ai:
-		pass
-		#print(board_extremes)
-
-func ai_turn(board_extremes: Array):					#Comienza el turno de la IA
 	var possible = []
-	
 	for piece in pieces:
 		var type = calculate_type(piece, board_extremes)
 		possible.append([piece,type])
 		
 	if possible.is_empty():
 		emit_signal("turn_passed")
-	else:
+		return
+	if turn and ai:
 		var p = select_piece(possible)
 		play_piece(p[0], p[1])
 
@@ -139,7 +152,8 @@ func select_piece(possible: Array) -> Array:			#Algoritmo para seleccion de la I
 	return max
 
 func play_piece(piece: Piece, type: String):			#Juega la pieza seleccionada
-	await get_tree().create_timer(1.0).timeout
+	if ai:
+		await get_tree().create_timer(1.0).timeout
 	if piece in pieces:
 		pieces.erase(piece)
 		hand.remove_child(piece)

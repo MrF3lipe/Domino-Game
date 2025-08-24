@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://cvquosur8j5gd"]
+[gd_scene load_steps=3 format=3 uid="uid://cvquosur8j5gd"]
 
 [ext_resource type="Script" uid="uid://dvqtl7jib4oti" path="res://scenes/game.gd" id="1_uwrxv"]
+[ext_resource type="PackedScene" uid="uid://bh8w2mwfgynfl" path="res://scenes/pregame.tscn" id="2_yqjtg"]
 
 [node name="Game" type="Control"]
 layout_mode = 3
@@ -11,6 +12,8 @@ offset_right = -4.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_uwrxv")
+
+[node name="pregame" parent="." instance=ExtResource("2_yqjtg")]
 
 [node name="Board" type="Control" parent="."]
 layout_mode = 1

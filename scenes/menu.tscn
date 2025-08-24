@@ -10,22 +10,22 @@ script = ExtResource("1_yqeox")
 
 [node name="PlayButton" type="Button" parent="."]
 offset_left = 294.0
-offset_top = 74.0
-offset_right = 410.0
-offset_bottom = 115.0
+offset_top = 70.0
+offset_right = 414.0
+offset_bottom = 111.0
 text = "Jugar"
 
 [node name="OptionsButton" type="Button" parent="."]
 offset_left = 294.0
-offset_top = 133.0
-offset_right = 410.0
-offset_bottom = 174.0
+offset_top = 134.0
+offset_right = 414.0
+offset_bottom = 175.0
 text = "Opciones"
 
 [node name="QuitButton" type="Button" parent="."]
 offset_left = 294.0
 offset_top = 198.0
-offset_right = 410.0
+offset_right = 414.0
 offset_bottom = 239.0
 text = "Salir"
 
