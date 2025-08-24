@@ -24,7 +24,6 @@ func _ready():
 func _input(event):						#Acciones del jugador (seleccionar pieza)
 	if not ai and event is InputEventMouseButton and turn:
 		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			clear_possibility_sprites()
 			var mouse_pos = get_global_mouse_position()
 			var rised = false
 			
@@ -35,6 +34,7 @@ func _input(event):						#Acciones del jugador (seleccionar pieza)
 				if piece_rect.has_point(mouse_pos):
 					if piece_selected:
 						piece_selected.decrease()
+						clear_possibility_areas()
 					piece.increase()
 					var type = calculate_type(piece,Global.board_extremes)
 					emit_signal("piece_pressed", piece, type)
@@ -43,11 +43,12 @@ func _input(event):						#Acciones del jugador (seleccionar pieza)
 					break
 			if !rised and piece_selected:
 				piece_selected.decrease()
+				clear_possibility_areas()
 				piece_selected = null
 
 # Eliminar todos los sprites del grupo
-func clear_possibility_sprites():
-	get_tree().call_group("possibility_sprites", "queue_free")
+func clear_possibility_areas():
+	get_tree().call_group("possibility_areas", "queue_free")
 
 func update_pieces_visibility():		#Establece q cara es visible
 	for piece in pieces:

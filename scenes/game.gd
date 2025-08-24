@@ -282,43 +282,76 @@ func _on_play_again_pressed():
 
 # Juega la pieza y pasa el turno al siguiente
 func _on_piece_played(piece: Piece, type: String):
-	board.add_child(piece)
 	piece.front.visible = true
+	board.add_child(piece)
 	piece.back.visible = false
 	piece_on_board(piece, type)
 	update_board_extremes(piece, type)
 	change_turn()
 
+func _input(event):
+	if event is InputEventMouseButton:
+		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			var mouse_pos = get_global_mouse_position()
+			
+			for possibility in get_tree().get_nodes_in_group("possibility_areas"):
+				var sprite = possibility.get_node("Sprite2D")
+				if sprite and sprite.texture:
+					var texture_size = sprite.texture.get_size() * sprite.scale
+					
+					var piece_rect = Rect2(
+						possibility.global_position.x - texture_size.x / 2,
+						possibility.global_position.y - texture_size.y / 2,
+						texture_size.x,
+						texture_size.y
+					)
+					
+					if piece_rect.has_point(mouse_pos):
+						var piece = possibility.get_meta("piece")
+						var type = possibility.get_meta("position_type")
+						_on_piece_played(piece, type)
+						break
+
 # Coloca los Sprites en la posiciones sugeridas
 func _on_piece_pressed(piece: Piece, type: String):
 	var possible_type = piece_on_board_unbound(piece, type)
+	var back_scene = preload("res://scenes/back.tscn")
 	
 	for t in possible_type:
-		print(t)
 		if t in ['RR', 'RL', 'RD']:
-			var right_posibility = Sprite2D.new()
+			var right_posibility = back_scene.instantiate()
 			right_posibility.name = "right_posibility"
-			right_posibility.texture = piece.back.texture
-			right_posibility.scale = piece.back.scale
-			right_posibility.centered = piece.back.centered
+			
+			var sprite = right_posibility.get_node("Sprite2D")
+			sprite.scale = piece.back.scale
+			sprite.centered = piece.back.centered
 	
 			right_posibility.position = piece_on_board(piece, t, true)
 			if t in ['RR', 'RL']:
-				right_posibility.rotation_degrees = 90
+				sprite.rotation_degrees = 90
+
+			right_posibility.set_meta("piece", piece)
+			right_posibility.set_meta("position_type", t)
 			add_child(right_posibility)
-			right_posibility.add_to_group("possibility_sprites")
+			right_posibility.add_to_group("possibility_areas")
+			
+			
 		elif t in ['LR', 'LL', 'LD', 'D', 'N']:
-			var left_posibility = Sprite2D.new()
+			var left_posibility = back_scene.instantiate()
 			left_posibility.name = "left_posibility"
-			left_posibility.texture = piece.back.texture
-			left_posibility.scale = piece.back.scale
-			left_posibility.centered = piece.back.centered
+			
+			var sprite = left_posibility.get_node("Sprite2D")
+			sprite.scale = piece.back.scale
+			sprite.centered = piece.back.centered
 			
 			left_posibility.position = piece_on_board(piece, t, true)
 			if t in ['LR', 'LL', 'N']:
-				left_posibility.rotation_degrees = 90
+				sprite.rotation_degrees = 90
+
+			left_posibility.set_meta("piece", piece)
+			left_posibility.set_meta("position_type", t)
 			add_child(left_posibility)
-			left_posibility.add_to_group("possibility_sprites")
+			left_posibility.add_to_group("possibility_areas")
 
 # Calcula la posicion de la pieza
 func piece_on_board(piece: Piece, type: String, reference = false):
