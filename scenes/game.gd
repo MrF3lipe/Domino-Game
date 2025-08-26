@@ -24,6 +24,8 @@ var game_started := false
 var game_ended := false
 var left_inverse = false
 var right_inverse = false
+var left_start = false
+var right_start = false
 
 func _ready():
 	randomize()
@@ -327,42 +329,77 @@ func piece_on_board(piece: Piece, type: String) -> Dictionary:
 
 	if type in ['D', 'N']:
 		result.position = board.size / 2 - piece.size / 2
-		result.rotation = 0 if type == 'D' else 90
+		result.rotation = 0 if type == 'D' else -90
 		return result
 
 	if type in ['RR', 'RL', 'RD']:
 		base_piece = board_extremes[2]
 		if base_piece.left == base_piece.right or piece.left == piece.right:
-			result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
-		else:
 			if not right_inverse:
-				result.position = piece_right_direction(base_piece, piece, type)
+				result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 			else:
-				result.position = piece_left_direction(base_piece, piece, type)
+				result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
+		else:
+			if right_start:
+				if type == "RD":
+					result.position = base_piece.position + Vector2(0 , piece.size.y * 3 / 4)
+				else:
+					result.position = base_piece.position + Vector2(-piece.size.y * 1 / 4 , piece.size.y * 3 / 4)
+				right_start = false
+			elif right_inverse:
+				result.position = piece_left_direction(base_piece, piece)
+			else:
+				result.position = piece_right_direction(base_piece, piece)
 		
-		if type == 'RR' or type == 'N' or type == 'RD':
-			result.rotation = 90
-		elif type == 'RL':
-			result.rotation = -90
-		elif type == 'RD':
-			result.rotation = 0
+		if not right_inverse:
+			if type == 'RR' or type == 'N':
+				result.rotation = 90
+			elif type == 'RL':
+				result.rotation = -90
+			elif type == 'RD':
+				result.rotation = 0
+		else:
+			if type == 'RL':
+				result.rotation = 90
+			elif type == 'RR':
+				result.rotation = -90
+			elif type == 'RD':
+				result.rotation = 0
 
 	elif type in ['LL', 'LR', 'LD']:
 		base_piece = board_extremes[1]
 		if base_piece.left == base_piece.right or piece.left == piece.right:
-			result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
-		else:
 			if not left_inverse:
-				result.position = piece_left_direction(base_piece, piece, type)
+				result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 			else:
-				result.position = piece_right_direction(base_piece, piece, type)
+				result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
+		else:
+			if left_start:
+				if type == "LD":
+					result.position = base_piece.position - Vector2(-piece.size.x, piece.size.y * 3 / 4)
+				else:
+					result.position = base_piece.position - Vector2(-piece.size.x/2, piece.size.y * 3 / 4)
+				left_start = false
+			elif left_inverse:
+				result.position = piece_right_direction(base_piece, piece)
+			else:
+				result.position = piece_left_direction(base_piece, piece)
 
-		if type == 'LL' or type == 'N':
-			result.rotation = 90
-		elif type == 'LR':
-			result.rotation = -90
-		elif type == 'LD':
-			result.rotation = 0
+		
+		if not left_inverse:
+			if type == 'LL':
+				result.rotation = 90
+			elif type == 'LR':
+				result.rotation = -90
+			elif type == 'LD':
+				result.rotation = 0
+		else: 
+			if type == 'LR':
+				result.rotation = 90
+			elif type == 'LL':
+				result.rotation = -90
+			elif type == 'LD':
+				result.rotation = 0
 
 	# --- Comprobación de límites ---
 	var viewport_size = get_viewport_rect().size
@@ -370,11 +407,9 @@ func piece_on_board(piece: Piece, type: String) -> Dictionary:
 	var min_x = margin_x
 	var max_x = viewport_size.x - margin_x
 
-	print(piece.left, ":", piece.right, " Left inverse:", left_inverse, " Right inverse:", right_inverse)
-	print("Menor limite izq: ", result.position.x - piece.size.x/2 < min_x)
-	print("Mayor limite der: ", result.position.x + piece.size.x/2 > max_x)
 	if result.position.x - piece.size.x/2 < min_x:
 		result.position = base_piece.position - Vector2(piece.size.x / 2, piece.size.y * 3 / 4)
+		left_start = true
 		if type == "LR":
 			result.rotation = 0
 		elif type == "LL":
@@ -386,6 +421,7 @@ func piece_on_board(piece: Piece, type: String) -> Dictionary:
 			left_inverse = not left_inverse
 			
 	elif result.position.x + piece.size.x/2 > max_x:
+		right_start = true
 		result.position = base_piece.position + Vector2(piece.size.x / 2, piece.size.y * 3 / 4)
 		if type == "RR":
 			result.rotation = 180
@@ -397,14 +433,14 @@ func piece_on_board(piece: Piece, type: String) -> Dictionary:
 		elif type in ["LL", "LR", "LD"]:
 			left_inverse = not left_inverse
 
-	#debug_visual(piece, type, base_piece, result.position)
+	debug_visual(piece, type, base_piece, result.position)
 	return result
 
-func piece_right_direction(base_piece, piece, type):
+func piece_right_direction(base_piece, piece):
 	var result = base_piece.position + Vector2(piece.size.x + base_piece.size.x, 0)
 	return result
 
-func piece_left_direction(base_piece, piece, type):
+func piece_left_direction(base_piece, piece):
 	var result = base_piece.position - Vector2(piece.size.x + base_piece.size.x, 0)
 	return result
 
@@ -433,15 +469,25 @@ func piece_on_board_unbound(piece: Piece, type: String):
 	return posib
 
 func debug_visual(piece: Piece, type: String, base_piece: Piece, piece_position: Vector2):
-	if type != 'D' and type != 'N':
-		print("\nCálculo de posición: ", str(piece.left), " : ", str(piece.right),
-		"\nTipo: ", type,
-		"\nBase: ", str(base_piece.left), " : ", str(base_piece.right),
-		"\nPieza base pos: ", str(base_piece.position),
-		"\nTamaño base: ", str(base_piece.size),
-		"\nRotación base: ", str(base_piece.rotation_degrees),
-		"\nRecorrido en x: ", str(piece.size.x + base_piece.size.x),
-		"\nPosición final: ", piece_position, " ", str(piece.rotation_degrees))
+	var viewport_size = get_viewport_rect().size
+	var margin_x = viewport_size.x * 0.15
+	var min_x = margin_x
+	var max_x = viewport_size.x - margin_x
+
+	print("\n==== DEBUG PIEZA ====")
+	print("Ficha: ", piece.left, ":", piece.right)
+	print("Tipo de jugada: ", type)
+	if base_piece:
+		print("Pieza base: ", base_piece.left, ":", base_piece.right)
+		print("Posición base: ", base_piece.position)
+		print("Tamaño base: ", base_piece.size)
+		print("Rotación base: ", base_piece.rotation_degrees)
+	print("Posición calculada: ", piece_position)
+	print("Rotación calculada: ", piece.rotation_degrees)
+	print("Flags -> Left inverse: ", left_inverse, ", Right inverse: ", right_inverse)
+	print("Flags -> Left start: ", left_start, ", Right start: ", right_start)
+	print("Límites pantalla -> min_x: ", min_x, ", max_x: ", max_x)
+	print("====================\n")
 
 # Actualiza los extremos del tablero
 func update_board_extremes(piece: Piece, type: String):
