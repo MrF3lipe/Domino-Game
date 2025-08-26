@@ -22,6 +22,8 @@ var current_player_index := 0
 var board_extremes: Array = []
 var game_started := false
 var game_ended := false
+var left_inverse = false
+var right_inverse = false
 
 func _ready():
 	randomize()
@@ -285,87 +287,126 @@ func _on_play_again_pressed():
 
 # Juega la pieza y pasa el turno al siguiente
 func _on_piece_played(piece: Piece, type: String):
+	var transform = piece_on_board(piece, type)
+	piece.position = transform.position
+	piece.rotation_degrees = transform.rotation
 	piece.front.visible = true
-	board.add_child(piece)
 	piece.back.visible = false
-	piece_on_board(piece, type)
+	
+	board.add_child(piece)
 	update_board_extremes(piece, type)
 	change_turn()
+	
+
 
 # Coloca los Sprites en la posiciones sugeridas
 func _on_piece_pressed(piece: Piece, type: String):
-	var possible_type = piece_on_board_unbound(piece, type)
+	var possible_types = piece_on_board_unbound(piece, type)
 	var back_scene = preload("res://scenes/back.tscn")
-	
-	for t in possible_type:
-		if t in ['RR', 'RL', 'RD']:
-			var right_posibility = back_scene.instantiate()
-			right_posibility.name = "right_posibility"
-			
-			var sprite = right_posibility.get_node("Sprite2D")
-			sprite.scale = piece.back.scale
-			sprite.centered = piece.back.centered
-	
-			right_posibility.position = piece_on_board(piece, t, true)
-			if t in ['RR', 'RL']:
-				sprite.rotation_degrees = 90
 
-			right_posibility.set_meta("piece", piece)
-			right_posibility.set_meta("position_type", t)
-			add_child(right_posibility)
-			right_posibility.add_to_group("possibility_areas")
-			
-			
-		elif t in ['LR', 'LL', 'LD', 'D', 'N']:
-			var left_posibility = back_scene.instantiate()
-			left_posibility.name = "left_posibility"
-			
-			var sprite = left_posibility.get_node("Sprite2D")
-			sprite.scale = piece.back.scale
-			sprite.centered = piece.back.centered
-			
-			left_posibility.position = piece_on_board(piece, t, true)
-			if t in ['LR', 'LL', 'N']:
-				sprite.rotation_degrees = 90
+	for t in possible_types:
+		var ref_sprite = back_scene.instantiate()
+		ref_sprite.name = "ref_" + t
+		var sprite_node = ref_sprite.get_node("Sprite2D")
+		sprite_node.scale = piece.back.scale
+		sprite_node.centered = piece.back.centered
 
-			left_posibility.set_meta("piece", piece)
-			left_posibility.set_meta("position_type", t)
-			add_child(left_posibility)
-			left_posibility.add_to_group("possibility_areas")
+		var transform = piece_on_board(piece, t)
+		ref_sprite.position = transform.position
+		sprite_node.rotation_degrees = transform.rotation
+
+		ref_sprite.set_meta("piece", piece)
+		ref_sprite.set_meta("position_type", t)
+		add_child(ref_sprite)
+		ref_sprite.add_to_group("possibility_areas")
 
 # Calcula la posicion de la pieza
-func piece_on_board(piece: Piece, type: String, reference = false):
-	var piece_position = Vector2(0, 0)
-	var base_piece = null
-	
-	if type == 'D' or type == 'N':
-		piece_position = board.size / 2 - piece.size / 2
-	elif type == 'RR' or type == 'RL' or type == 'RD':
+func piece_on_board(piece: Piece, type: String) -> Dictionary:
+	var result = {"position": Vector2(), "rotation": 0}
+	var base_piece: Piece
+
+	if type in ['D', 'N']:
+		result.position = board.size / 2 - piece.size / 2
+		result.rotation = 0 if type == 'D' else 90
+		return result
+
+	if type in ['RR', 'RL', 'RD']:
 		base_piece = board_extremes[2]
 		if base_piece.left == base_piece.right or piece.left == piece.right:
-			piece_position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
+			result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 		else:
-			piece_position = base_piece.position + Vector2(piece.size.x + base_piece.size.x, 0)
-	elif type == 'LR' or type == 'LL' or type == 'LD':
+			if not right_inverse:
+				result.position = piece_right_direction(base_piece, piece, type)
+			else:
+				result.position = piece_left_direction(base_piece, piece, type)
+		
+		if type == 'RR' or type == 'N' or type == 'RD':
+			result.rotation = 90
+		elif type == 'RL':
+			result.rotation = -90
+		elif type == 'RD':
+			result.rotation = 0
+
+	elif type in ['LL', 'LR', 'LD']:
 		base_piece = board_extremes[1]
 		if base_piece.left == base_piece.right or piece.left == piece.right:
-			piece_position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
+			result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 		else:
-			piece_position = base_piece.position - Vector2(piece.size.x + base_piece.size.x, 0)
-	
-	if reference == false:
-		piece.position = piece_position
-	
-		if type=='D':
-			piece.rotation_degrees = 0
-		elif type=='N' or type=='RR' or type=='LL':
-			piece.rotation_degrees = 90
-		elif type =='RL' or type=='LR':
-			piece.rotation_degrees = -90
-	else:
-		return piece_position
-	
-	#debug_visual(piece, type, base_piece, piece_position)
+			if not left_inverse:
+				result.position = piece_left_direction(base_piece, piece, type)
+			else:
+				result.position = piece_right_direction(base_piece, piece, type)
+
+		if type == 'LL' or type == 'N':
+			result.rotation = 90
+		elif type == 'LR':
+			result.rotation = -90
+		elif type == 'LD':
+			result.rotation = 0
+
+	# --- Comprobación de límites ---
+	var viewport_size = get_viewport_rect().size
+	var margin_x = viewport_size.x * 0.15
+	var min_x = margin_x
+	var max_x = viewport_size.x - margin_x
+
+	print(piece.left, ":", piece.right, " Left inverse:", left_inverse, " Right inverse:", right_inverse)
+	print("Menor limite izq: ", result.position.x - piece.size.x/2 < min_x)
+	print("Mayor limite der: ", result.position.x + piece.size.x/2 > max_x)
+	if result.position.x - piece.size.x/2 < min_x:
+		result.position = base_piece.position - Vector2(piece.size.x / 2, piece.size.y * 3 / 4)
+		if type == "LR":
+			result.rotation = 0
+		elif type == "LL":
+			result.rotation = 180
+			
+		if type in ["RR", "RL", "RD"]:
+			right_inverse = not right_inverse
+		elif type in ["LL", "LR", "LD"]:
+			left_inverse = not left_inverse
+			
+	elif result.position.x + piece.size.x/2 > max_x:
+		result.position = base_piece.position + Vector2(piece.size.x / 2, piece.size.y * 3 / 4)
+		if type == "RR":
+			result.rotation = 180
+		elif type == "RL":
+			result.rotation = 0
+		
+		if type in ["RR", "RL", "RD"]:
+			right_inverse = not right_inverse
+		elif type in ["LL", "LR", "LD"]:
+			left_inverse = not left_inverse
+
+	#debug_visual(piece, type, base_piece, result.position)
+	return result
+
+func piece_right_direction(base_piece, piece, type):
+	var result = base_piece.position + Vector2(piece.size.x + base_piece.size.x, 0)
+	return result
+
+func piece_left_direction(base_piece, piece, type):
+	var result = base_piece.position - Vector2(piece.size.x + base_piece.size.x, 0)
+	return result
 
 # Calcula las posibles posiciones de la pieza
 func piece_on_board_unbound(piece: Piece, type: String):
