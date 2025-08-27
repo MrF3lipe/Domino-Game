@@ -69,10 +69,10 @@ func setup_pieces():
 func create_players():
 	var player_scene = preload("res://scenes/player.tscn")
 	var players = [
-		{"node": player_top, "name": "Top", "ai": true, "vertical": false, "reversed": false},
-		{"node": player_right, "name": "Right", "ai": true, "vertical": true, "reversed": true},
-		{"node": player_bottom, "name": "Bottom", "ai": !Global.playing, "vertical": false, "reversed": true},
-		{"node": player_left, "name": "Left", "ai": true, "vertical": true, "reversed": false}
+		{"node": player_top, "name": "Top", "ai": !Global.players, "vertical": false, "reversed": false},
+		{"node": player_right, "name": "Right", "ai": !Global.players, "vertical": true, "reversed": true},
+		{"node": player_bottom, "name": "Bottom", "ai": !Global.players or !Global.playing, "vertical": false, "reversed": true},
+		{"node": player_left, "name": "Left", "ai": !Global.players, "vertical": true, "reversed": false}
 	]
 
 	for p in players:
@@ -385,7 +385,13 @@ func piece_on_board(piece: Piece, type: String, update_flags = false) -> Diction
 			if not left_inverse:
 				result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 			else:
-				result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
+				if not left_start:
+					result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
+				else:
+					if update_flags:
+						left_start = false
+					
+					result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 		else:
 			if left_start:
 				if type == "LD":

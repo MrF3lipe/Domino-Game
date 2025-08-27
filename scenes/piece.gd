@@ -19,7 +19,8 @@ var size: Vector2:
 func _ready():
 	load_piece()
 
-func load_piece():		#Carga una pieza segun sus valores
+# Carga una pieza segun sus valores
+func load_piece():
 	
 	if left==-1:
 		front.texture = load("res://textures/B.png")
@@ -35,17 +36,20 @@ func load_piece():		#Carga una pieza segun sus valores
 		back.texture = load("res://textures/B.png" % [left, right])
 		back.scale = Vector2(piece_scale, piece_scale)
 
-func set_values(l = left, r = right, s = piece_scale):		#actualiza los valores de la pieza
+# Actualiza los valores de la pieza
+func set_values(l = left, r = right, s = piece_scale):
 	left = l
 	right = r
 	piece_scale = s
 
-func increase():			#incrementa el tamaño
+# Incrementa el tamaño
+func increase():
 	var tween = create_tween()
 	tween.tween_property(self, "scale", Vector2(1.2, 1.2), 0.2)\
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
-func decrease():			#Disminuye el tamaño
+# Disminuye el tamaño
+func decrease():
 	var tween = create_tween()
 	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.2)\
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)

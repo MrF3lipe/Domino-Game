@@ -20,20 +20,28 @@ grow_vertical = 0
 text = "Comenzar"
 metadata/_edit_use_anchors_ = true
 
-[node name="CheckBox" type="CheckBox" parent="."]
-offset_left = 12.0
-offset_top = 139.0
-offset_right = 186.0
-offset_bottom = 170.0
-text = "Partida Modificada"
+[node name="CheckButton" type="CheckButton" parent="."]
+offset_left = 30.0
+offset_top = 80.0
+offset_right = 247.0
+offset_bottom = 111.0
+text = "Partida de devs"
 
-[node name="CheckBox2" type="CheckBox" parent="."]
-offset_left = 13.0
-offset_top = 170.0
-offset_right = 150.0
-offset_bottom = 201.0
-text = "Partida De IAs"
+[node name="CheckButton2" type="CheckButton" parent="."]
+offset_left = 30.0
+offset_top = 120.0
+offset_right = 247.0
+offset_bottom = 151.0
+text = "Partida de IAs"
+
+[node name="CheckButton3" type="CheckButton" parent="."]
+offset_left = 30.0
+offset_top = 160.0
+offset_right = 247.0
+offset_bottom = 191.0
+text = "Partida de jugadores "
 
 [connection signal="pressed" from="Play" to="." method="_on_play_pressed"]
-[connection signal="toggled" from="CheckBox" to="." method="_on_check_box_toggled"]
-[connection signal="toggled" from="CheckBox2" to="." method="_on_check_box_2_toggled"]
+[connection signal="toggled" from="CheckButton" to="." method="_on_check_button_toggled"]
+[connection signal="toggled" from="CheckButton2" to="." method="_on_check_button_2_toggled"]
+[connection signal="toggled" from="CheckButton3" to="." method="_on_check_button_3_toggled"]
