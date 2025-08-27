@@ -29,6 +29,8 @@ var left_start = false
 var right_start = false
 var left_double = true
 var right_double = true
+var left_corner_double = false
+var right_corner_double = false
 
 func _ready():
 	randomize()
@@ -340,6 +342,14 @@ func _on_piece_pressed(piece: Piece, type: String):
 func piece_on_board(piece: Piece, type: String, update_flags = false) -> Dictionary:
 	var result = {"position": Vector2(), "rotation": 0}
 	var base_piece: Piece
+	
+	print("\n==== DEBUG PIEZA ====")
+	print("Ficha: ", piece.left, ":", piece.right)
+	print("Tipo de jugada: ", type)
+	print("Flags -> Left inverse: ", left_inverse, ", Right inverse: ", right_inverse)
+	print("Flags -> Left start: ", left_start, ", Right start: ", right_start)
+	print("Flags -> Left double: ", left_double, ", Right double: ", right_double)
+	print("Flags -> Left corner double: ", left_corner_double, ", Right corner: ", right_corner_double)
 
 	if type in ['D', 'N']:
 		result.position = board.size / 2 - piece.size / 2
@@ -347,17 +357,28 @@ func piece_on_board(piece: Piece, type: String, update_flags = false) -> Diction
 		return result
 
 	if type in ['RR', 'RL', 'RD']:
+		print("elif type in ['LL', 'LR', 'LD']:")
 		base_piece = board_extremes[2]
 		if base_piece.left == base_piece.right or piece.left == piece.right:
-			if not right_inverse:
+			print("if base_piece.left == base_piece.right or piece.left == piece.right:")
+			if right_corner_double:
+				print("if left_corner_double:")
+				if update_flags:
+					right_corner_double = false
+				result.position = base_piece.position - Vector2(base_piece.size.y, 0)
+			elif not right_inverse:
+				print("elif not left_inverse:")
 				result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 			else:
 				if not right_start:
+					print("if not left_start:")
 					result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 				else:
 					if update_flags:
 						right_start = false
+						right_corner_double = true
 					
+					print("finally")
 					result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 		else:
 			if right_start:
@@ -391,7 +412,11 @@ func piece_on_board(piece: Piece, type: String, update_flags = false) -> Diction
 	elif type in ['LL', 'LR', 'LD']:
 		base_piece = board_extremes[1]
 		if base_piece.left == base_piece.right or piece.left == piece.right:
-			if not left_inverse:
+			if left_corner_double:
+				if update_flags:
+					left_corner_double = false
+				result.position = base_piece.position + Vector2(base_piece.size.y, 0)
+			elif not left_inverse:
 				result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 			else:
 				if not left_start:
@@ -399,6 +424,7 @@ func piece_on_board(piece: Piece, type: String, update_flags = false) -> Diction
 				else:
 					if update_flags:
 						left_start = false
+						left_corner_double = true
 					
 					result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 		else:
@@ -432,7 +458,7 @@ func piece_on_board(piece: Piece, type: String, update_flags = false) -> Diction
 				result.rotation = 0
 
 	result = limit_check(result, piece, base_piece, type, update_flags)
-	debug_visual(piece, type, base_piece, result.position)
+	#debug_visual(piece, type, base_piece, result.position)
 	return result
 
 # Comprueba que se juegue en los limites
