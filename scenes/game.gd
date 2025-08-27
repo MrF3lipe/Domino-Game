@@ -27,6 +27,8 @@ var left_inverse = false
 var right_inverse = false
 var left_start = false
 var right_start = false
+var left_double = true
+var right_double = true
 
 func _ready():
 	randomize()
@@ -350,7 +352,13 @@ func piece_on_board(piece: Piece, type: String, update_flags = false) -> Diction
 			if not right_inverse:
 				result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 			else:
-				result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
+				if not right_start:
+					result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
+				else:
+					if update_flags:
+						right_start = false
+					
+					result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 		else:
 			if right_start:
 				if type == "RD":
@@ -359,6 +367,7 @@ func piece_on_board(piece: Piece, type: String, update_flags = false) -> Diction
 					result.position = base_piece.position + Vector2(-piece.size.y * 1 / 4 , piece.size.y * 3 / 4)
 				if update_flags:
 					right_start = false
+					right_double = false
 			elif right_inverse:
 				result.position = piece_left_direction(base_piece, piece)
 			else:
@@ -400,6 +409,8 @@ func piece_on_board(piece: Piece, type: String, update_flags = false) -> Diction
 					result.position = base_piece.position - Vector2(-piece.size.x/2, piece.size.y * 3 / 4)
 				if update_flags:
 					left_start = false
+					left_double = false
+					
 			elif left_inverse:
 				result.position = piece_right_direction(base_piece, piece)
 			else:
@@ -431,8 +442,12 @@ func limit_check(result, piece, base_piece, type, update_flags):
 	var min_x = margin_x
 	var max_x = viewport_size.x - margin_x
 
-	if result.position.x - piece.size.x/2 < min_x:
-		result.position = base_piece.position - Vector2(piece.size.x / 2, piece.size.y * 3 / 4)
+	if result.position.x - piece.size.x/2 < min_x and not type == "LD":
+		if base_piece.left == base_piece.right or piece.left == piece.right:
+			result.position = base_piece.position - Vector2(0, piece.size.y)
+		else:
+			result.position = base_piece.position - Vector2(piece.size.x / 2, piece.size.y * 3 / 4)
+		
 		if type == "LR":
 			result.rotation = 0
 		elif type == "LL":
@@ -445,8 +460,11 @@ func limit_check(result, piece, base_piece, type, update_flags):
 			elif type in ["LL", "LR", "LD"]:
 				left_inverse = not left_inverse
 			
-	elif result.position.x + piece.size.x/2 > max_x:
-		result.position = base_piece.position + Vector2(piece.size.x / 2, piece.size.y * 3 / 4)
+	elif result.position.x + piece.size.x/2 > max_x and not type == "RD":
+		if base_piece.left == base_piece.right or piece.left == piece.right:
+			result.position = base_piece.position + Vector2(0, piece.size.y)
+		else:
+			result.position = base_piece.position + Vector2(piece.size.x / 2, piece.size.y * 3 / 4)
 
 		if type == "RR":
 			result.rotation = 180
@@ -459,7 +477,16 @@ func limit_check(result, piece, base_piece, type, update_flags):
 				right_inverse = not right_inverse
 			elif type in ["LL", "LR", "LD"]:
 				left_inverse = not left_inverse
-	
+	elif type == "LD" and left_inverse and left_double:
+		if update_flags:
+			left_double = false
+		result.position = base_piece.position - Vector2(0, piece.size.y * 3 / 4)
+		result.rotation = 90
+	elif type == "RD" and right_inverse and right_double:
+		if update_flags:
+			right_double = false
+		result.position = base_piece.position + Vector2(0, piece.size.y * 3 / 4)
+		result.rotation = 90
 	return result
 
 func piece_right_direction(base_piece, piece):
