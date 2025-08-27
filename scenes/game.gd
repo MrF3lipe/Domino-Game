@@ -10,6 +10,7 @@ extends Control
 @export var piece_scale = 0.1
 
 @onready var pregame: Window = $pregame
+@onready var dev: Window = $dev_menu
 @onready var board: Control = $Board
 @onready var players_container: Control = $Players
 @onready var player_top: Control = $Players/PlayerTop
@@ -33,6 +34,19 @@ func _ready():
 	
 	pregame.visible = true
 	pregame.play_pressed.connect(on_play_pressed)
+	pregame.active_dev.connect(show_dev_menu)
+
+func show_dev_menu():
+	dev.visible = true
+	dev.dev_add.connect(dev_added)
+
+func dev_added(l, r, p):
+	print(l,r,p)
+	var Player = get_player_by_index(p)
+	var piece = preload("res://scenes/piece.tscn").instantiate()
+	piece.set_values(l, r, piece_scale)
+	Player.add_piece(piece)
+	Player.reorganize_pieces()
 
 # Comienza una partida
 func on_play_pressed():

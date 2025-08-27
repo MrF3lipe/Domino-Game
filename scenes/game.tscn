@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://cvquosur8j5gd"]
+[gd_scene load_steps=4 format=3 uid="uid://cvquosur8j5gd"]
 
 [ext_resource type="Script" uid="uid://dvqtl7jib4oti" path="res://scenes/game.gd" id="1_uwrxv"]
+[ext_resource type="PackedScene" uid="uid://b24duvf1idjew" path="res://scenes/dev_menu.tscn" id="2_lnu2h"]
 [ext_resource type="PackedScene" uid="uid://bh8w2mwfgynfl" path="res://scenes/pregame.tscn" id="2_yqjtg"]
 
 [node name="Game" type="Control"]
@@ -12,6 +13,9 @@ offset_right = -4.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_uwrxv")
+
+[node name="dev_menu" parent="." instance=ExtResource("2_lnu2h")]
+visible = false
 
 [node name="pregame" parent="." instance=ExtResource("2_yqjtg")]
 

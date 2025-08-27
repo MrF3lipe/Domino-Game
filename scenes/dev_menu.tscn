@@ -1,0 +1,35 @@
+[gd_scene load_steps=2 format=3 uid="uid://b24duvf1idjew"]
+
+[ext_resource type="Script" uid="uid://cjmaetplrvit7" path="res://scenes/dev_menu.gd" id="1_sb4v5"]
+
+[node name="dev_menu" type="Window"]
+auto_translate_mode = 1
+title = "Dev Menu"
+position = Vector2i(850, 100)
+size = Vector2i(200, 150)
+script = ExtResource("1_sb4v5")
+
+[node name="TextEdit" type="TextEdit" parent="."]
+anchors_preset = -1
+anchor_left = 0.03
+anchor_top = 0.08
+anchor_right = 0.31
+anchor_bottom = 0.313333
+grow_horizontal = 0
+placeholder_text = "0-5-0"
+metadata/_edit_use_anchors_ = true
+
+[node name="Button" type="Button" parent="."]
+anchors_preset = -1
+anchor_left = 0.27
+anchor_top = 0.133333
+anchor_right = 0.84
+anchor_bottom = 0.34
+offset_left = 22.0
+offset_top = -8.0
+offset_right = 22.0
+offset_bottom = -8.0
+text = "Agregar Ficha"
+metadata/_edit_use_anchors_ = true
+
+[connection signal="pressed" from="Button" to="." method="_on_button_pressed"]
