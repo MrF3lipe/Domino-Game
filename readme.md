@@ -95,11 +95,11 @@ def convertirte_en_pro():
 #### 🤝 ¿QUIERES AYUDAR? ¡CLARO QUE SÍ!
 1. Hazle fork al proyecto
 
-2. Crea tu rama: git checkout -b feature/lo-que-se-te-ocurra
+2. Crea tu rama: ```bash git checkout -b feature/lo-que-se-te-ocurra ```
 
-3. Guarda cambios: git commit -m 'Agregué cosa chida'
+3. Guarda cambios: ```bash git commit -m 'Agregué cosa chida' ```
 
-4. Manda todo: git push origin feature/lo-que-se-te-ocurra
+4. Manda todo: ```bash git push origin feature/lo-que-se-te-ocurra ```
 
 5. Pide pull request y cruza los dedos
 
