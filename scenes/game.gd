@@ -3,11 +3,11 @@ extends Control
 
 @export var total_players := 4
 @export var pieces_per_player := 7
-@export var margin := 0.05
-@export var piece_spacing := 50
+@export var margin := 0.1
+@export var piece_spacing := 40
 @export var length = 300
 @export var width = 100
-@export var piece_scale = 0.1
+@export var piece_scale = 0.08
 
 @onready var pregame: Window = $pregame
 @onready var dev: Window = $dev_menu
@@ -23,14 +23,16 @@ var current_player_index := 0
 var board_extremes: Array = []
 var game_started := false
 var game_ended := false
-var left_inverse = false
-var right_inverse = false
-var left_start = false
-var right_start = false
-var left_double = true
-var right_double = true
-var left_corner_double = false
-var right_corner_double = false
+var game_logic = [
+					false,			#[0] Por la izquierda se esta jugando hacia la derecha
+					false,			#[1] Por la derecha se esta jugando hacia la izquierda
+					false,			#[2] Pieza que empieza el sentido contrario de game_logic[0]
+					false,			#[3] Pieza que empieza el sentido contrario de game_logic[1]
+					true,			#[4] Si en la esquina se puede poner un doble por la izquierda
+					true,			#[5] Si en la esquina se puede poner un doble por la derecha
+					false,			#[6] Auxiliar que dice si ya pusieron doble por la izquierda
+					false			#[7] Auxiliar que dice si ya pusieron doble por la derecha
+]
 
 func _ready():
 	randomize()
@@ -45,12 +47,12 @@ func show_dev_menu():
 	dev.dev_add.connect(dev_added)
 
 func dev_added(l, r, p):
-	print(l,r,p)
-	var Player = get_player_by_index(p)
+	#print(l,r,p)
+	var player = get_player_by_index(p)
 	var piece = preload("res://scenes/piece.tscn").instantiate()
 	piece.set_values(l, r, piece_scale)
-	Player.add_piece(piece)
-	Player.reorganize_pieces()
+	player.add_piece(piece)
+	player.reorganize_pieces()
 
 # Comienza una partida
 func on_play_pressed():
@@ -318,8 +320,8 @@ func _on_piece_played(piece: Piece, type: String):
 	change_turn()
 
 # Coloca los Sprites en la posiciones sugeridas
-func _on_piece_pressed(piece: Piece, type: String):
-	var possible_types = piece_on_board_unbound(piece, type)
+func _on_piece_pressed(piece: Piece):
+	var possible_types = piece_on_board_unbound(piece)
 	var back_scene = preload("res://scenes/back.tscn")
 
 	for t in possible_types:
@@ -342,14 +344,6 @@ func _on_piece_pressed(piece: Piece, type: String):
 func piece_on_board(piece: Piece, type: String, update_flags = false) -> Dictionary:
 	var result = {"position": Vector2(), "rotation": 0}
 	var base_piece: Piece
-	
-	print("\n==== DEBUG PIEZA ====")
-	print("Ficha: ", piece.left, ":", piece.right)
-	print("Tipo de jugada: ", type)
-	print("Flags -> Left inverse: ", left_inverse, ", Right inverse: ", right_inverse)
-	print("Flags -> Left start: ", left_start, ", Right start: ", right_start)
-	print("Flags -> Left double: ", left_double, ", Right double: ", right_double)
-	print("Flags -> Left corner double: ", left_corner_double, ", Right corner: ", right_corner_double)
 
 	if type in ['D', 'N']:
 		result.position = board.size / 2 - piece.size / 2
@@ -357,44 +351,38 @@ func piece_on_board(piece: Piece, type: String, update_flags = false) -> Diction
 		return result
 
 	if type in ['RR', 'RL', 'RD']:
-		print("elif type in ['LL', 'LR', 'LD']:")
 		base_piece = board_extremes[2]
 		if base_piece.left == base_piece.right or piece.left == piece.right:
-			print("if base_piece.left == base_piece.right or piece.left == piece.right:")
-			if right_corner_double:
-				print("if left_corner_double:")
+			if game_logic[7]:
 				if update_flags:
-					right_corner_double = false
+					game_logic[7] = false
 				result.position = base_piece.position - Vector2(base_piece.size.y, 0)
-			elif not right_inverse:
-				print("elif not left_inverse:")
+			elif not game_logic[1]:
 				result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 			else:
-				if not right_start:
-					print("if not left_start:")
+				if not game_logic[3]:
 					result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 				else:
 					if update_flags:
-						right_start = false
-						right_corner_double = true
+						game_logic[3] = false
+						game_logic[7] = true
 					
-					print("finally")
 					result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 		else:
-			if right_start:
+			if game_logic[3]:
 				if type == "RD":
 					result.position = base_piece.position + Vector2(0 , piece.size.y * 3 / 4)
 				else:
 					result.position = base_piece.position + Vector2(-piece.size.y * 1 / 4 , piece.size.y * 3 / 4)
 				if update_flags:
-					right_start = false
-					right_double = false
-			elif right_inverse:
+					game_logic[3] = false
+					game_logic[5] = false
+			elif game_logic[1]:
 				result.position = piece_left_direction(base_piece, piece)
 			else:
 				result.position = piece_right_direction(base_piece, piece)
 		
-		if not right_inverse:
+		if not game_logic[1]:
 			if type == 'RR' or type == 'N':
 				result.rotation = 90
 			elif type == 'RL':
@@ -412,37 +400,37 @@ func piece_on_board(piece: Piece, type: String, update_flags = false) -> Diction
 	elif type in ['LL', 'LR', 'LD']:
 		base_piece = board_extremes[1]
 		if base_piece.left == base_piece.right or piece.left == piece.right:
-			if left_corner_double:
+			if game_logic[6]:
 				if update_flags:
-					left_corner_double = false
+					game_logic[6] = false
 				result.position = base_piece.position + Vector2(base_piece.size.y, 0)
-			elif not left_inverse:
+			elif not game_logic[0]:
 				result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 			else:
-				if not left_start:
+				if not game_logic[2]:
 					result.position = base_piece.position + Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 				else:
 					if update_flags:
-						left_start = false
-						left_corner_double = true
+						game_logic[2] = false
+						game_logic[6] = true
 					
 					result.position = base_piece.position - Vector2(piece.size.x / 2 + base_piece.size.x, 0)
 		else:
-			if left_start:
+			if game_logic[2]:
 				if type == "LD":
 					result.position = base_piece.position - Vector2(-piece.size.x, piece.size.y * 3 / 4)
 				else:
 					result.position = base_piece.position - Vector2(-piece.size.x/2, piece.size.y * 3 / 4)
 				if update_flags:
-					left_start = false
-					left_double = false
+					game_logic[2] = false
+					game_logic[4] = false
 					
-			elif left_inverse:
+			elif game_logic[0]:
 				result.position = piece_right_direction(base_piece, piece)
 			else:
 				result.position = piece_left_direction(base_piece, piece)
 
-		if not left_inverse:
+		if not game_logic[0]:
 			if type == 'LL':
 				result.rotation = 90
 			elif type == 'LR':
@@ -456,10 +444,8 @@ func piece_on_board(piece: Piece, type: String, update_flags = false) -> Diction
 				result.rotation = -90
 			elif type == 'LD':
 				result.rotation = 0
-
-	result = limit_check(result, piece, base_piece, type, update_flags)
-	#debug_visual(piece, type, base_piece, result.position)
-	return result
+	
+	return limit_check(result, piece, base_piece, type, update_flags)
 
 # Comprueba que se juegue en los limites
 func limit_check(result, piece, base_piece, type, update_flags):
@@ -480,11 +466,11 @@ func limit_check(result, piece, base_piece, type, update_flags):
 			result.rotation = 180
 		
 		if update_flags:
-			left_start = true
+			game_logic[2] = true
 			if type in ["RR", "RL", "RD"]:
-				right_inverse = not right_inverse
+				game_logic[1] = not game_logic[1]
 			elif type in ["LL", "LR", "LD"]:
-				left_inverse = not left_inverse
+				game_logic[0] = not game_logic[0]
 			
 	elif result.position.x + piece.size.x/2 > max_x and not type == "RD":
 		if base_piece.left == base_piece.right or piece.left == piece.right:
@@ -498,19 +484,19 @@ func limit_check(result, piece, base_piece, type, update_flags):
 			result.rotation = 0
 		
 		if update_flags:
-			right_start = true
+			game_logic[3] = true
 			if type in ["RR", "RL", "RD"]:
-				right_inverse = not right_inverse
+				game_logic[1] = not game_logic[1]
 			elif type in ["LL", "LR", "LD"]:
-				left_inverse = not left_inverse
-	elif type == "LD" and left_inverse and left_double:
+				game_logic[0] = not game_logic[0]
+	elif type == "LD" and game_logic[0] and game_logic[4]:
 		if update_flags:
-			left_double = false
+			game_logic[4] = false
 		result.position = base_piece.position - Vector2(0, piece.size.y * 3 / 4)
 		result.rotation = 90
-	elif type == "RD" and right_inverse and right_double:
+	elif type == "RD" and game_logic[1] and game_logic[5]:
 		if update_flags:
-			right_double = false
+			game_logic[5] = false
 		result.position = base_piece.position + Vector2(0, piece.size.y * 3 / 4)
 		result.rotation = 90
 	return result
@@ -524,7 +510,7 @@ func piece_left_direction(base_piece, piece):
 	return result
 
 # Calcula las posibles posiciones de la pieza
-func piece_on_board_unbound(piece: Piece, type: String):
+func piece_on_board_unbound(piece: Piece):
 	var posib = []
 	if board_extremes.is_empty():
 		if piece.left == piece.right:
@@ -546,27 +532,6 @@ func piece_on_board_unbound(piece: Piece, type: String):
 			posib.append('RL')
 	
 	return posib
-
-func debug_visual(piece: Piece, type: String, base_piece: Piece, piece_position: Vector2):
-	var viewport_size = get_viewport_rect().size
-	var margin_x = viewport_size.x * 0.15
-	var min_x = margin_x
-	var max_x = viewport_size.x - margin_x
-
-	print("\n==== DEBUG PIEZA ====")
-	print("Ficha: ", piece.left, ":", piece.right)
-	print("Tipo de jugada: ", type)
-	if base_piece:
-		print("Pieza base: ", base_piece.left, ":", base_piece.right)
-		print("Posición base: ", base_piece.position)
-		print("Tamaño base: ", base_piece.size)
-		print("Rotación base: ", base_piece.rotation_degrees)
-	print("Posición calculada: ", piece_position)
-	print("Rotación calculada: ", piece.rotation_degrees)
-	print("Flags -> Left inverse: ", left_inverse, ", Right inverse: ", right_inverse)
-	print("Flags -> Left start: ", left_start, ", Right start: ", right_start)
-	print("Límites pantalla -> min_x: ", min_x, ", max_x: ", max_x)
-	print("====================\n")
 
 # Actualiza los extremos del tablero
 func update_board_extremes(piece: Piece, type: String):
