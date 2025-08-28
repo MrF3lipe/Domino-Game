@@ -5,8 +5,10 @@ extends Control
 func _ready():
 	menu.play_button_pressed.connect(_on_play_pressed)
 
-func _on_toggle_change(button_pressed: bool):		#Activa o Desactiva el jugador humano
+# Activa o desactiva el jugador humano
+func _on_toggle_change(button_pressed: bool):
 	Global.playing = !button_pressed
 
-func _on_play_pressed():		#Inicia el juego
+# Inicia el juego
+func _on_play_pressed():
 	get_tree().change_scene_to_file("res://scenes/game.tscn")
