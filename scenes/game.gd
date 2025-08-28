@@ -18,6 +18,8 @@ extends Control
 @onready var player_left: Control = $Players/PlayerLeft
 @onready var player_right: Control = $Players/PlayerRight
 
+var is_multiplayer := false
+var is_host := false
 var all_pieces: Array[Piece] = []
 var current_player_index := 0
 var board_extremes: Array = []
@@ -38,9 +40,10 @@ func _ready():
 	randomize()
 	await get_tree().process_frame
 	
-	pregame.visible = true
-	pregame.play_pressed.connect(on_play_pressed)
-	pregame.active_dev.connect(show_dev_menu)
+	if not is_multiplayer:
+		pregame.visible = true
+		pregame.play_pressed.connect(on_play_pressed)
+		pregame.active_dev.connect(show_dev_menu)
 
 func show_dev_menu():
 	dev.visible = true
@@ -54,11 +57,25 @@ func dev_added(l, r, p):
 	player.add_piece(piece)
 	player.reorganize_pieces()
 
+func set_multiplayer_info(peer, host_flag):
+	is_multiplayer = peer != null
+	is_host = host_flag
+
 # Comienza una partida
 func on_play_pressed():
-	setup_pieces()
-	setup_players()
-	start_game()
+	if not is_multiplayer:
+		setup_pieces()
+		setup_players()
+		start_game()
+	elif is_host:
+		print('host')
+		setup_pieces()
+		setup_players()
+		start_game()
+		var seed = randi()
+		rpc("rpc_start_game", seed)
+	else:
+		print("Esperando al host para iniciar el juego")
 
 # Prepara los jugadores
 func setup_players():
@@ -157,6 +174,7 @@ func generate_all_pieces():
 		for right in range(left, 7):
 			var piece = preload("res://scenes/piece.tscn").instantiate()
 			piece.set_values(left, right, piece_scale)
+			piece.id = "%d-%d" % [left, right]
 			all_pieces.append(piece)
 
 # Reparte la piezas
@@ -571,3 +589,28 @@ func _notification(what):
 # Ajusta la pantalla
 func adjust_layout():
 	pass
+
+@rpc("any_peer", "reliable")
+func rpc_start_game(seed: int):
+	seed_random_number_generator(seed)
+	setup_pieces()
+	setup_players()
+	start_game()
+
+func seed_random_number_generator(seed_value: int):
+	seed(seed_value)
+
+@rpc("any_peer", "reliable")
+func rpc_play_piece(id: String, type: String):
+	var piece = find_piece(id)
+	if piece:
+		_on_piece_played(piece, type)
+	else:
+		push_warning("❌ No se encontró la pieza con id: %s" % id)
+
+func find_piece(id: String) -> Piece:
+	for player in $Players.get_children():
+		for piece in player.pieces:
+			if piece.piece_id == id:
+				return piece
+	return null

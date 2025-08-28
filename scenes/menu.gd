@@ -24,3 +24,9 @@ func _on_play_4_button_pressed():
 	Global.amount = 4
 	play_button_pressed.emit()
 	self.hide()
+
+
+func _on_multiplayer_pressed() -> void:
+	var lobby_scene = preload("res://scenes/Lobby.tscn").instantiate()
+	get_tree().current_scene.add_child(lobby_scene)
+	self.hide()

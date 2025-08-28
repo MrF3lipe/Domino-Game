@@ -3,6 +3,7 @@ extends Node2D
 
 @export var left: int = 0
 @export var right: int = 5
+@export var id: String = '0-5'
 
 @onready var front: Sprite2D = $Front
 @onready var back: Sprite2D = $Back

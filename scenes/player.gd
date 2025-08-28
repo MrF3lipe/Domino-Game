@@ -159,7 +159,12 @@ func play_piece(piece: Piece, type: String):			#Juega la pieza seleccionada
 	if piece in pieces:
 		pieces.erase(piece)
 		hand.remove_child(piece)
-		emit_signal("piece_played", piece, type)
+		
+		if multiplayer.is_server():
+			emit_signal("piece_played", piece, type)
+		else:
+			rpc_id(1, "rpc_play_piece", piece.id, type)
+			
 		reorganize_pieces()
 
 func calculate_hand_points() -> int:					#Calcula los puntos en caso de empate
