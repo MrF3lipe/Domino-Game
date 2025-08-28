@@ -77,7 +77,7 @@ func create_players():
 	var players = [
 		{"node": player_top, "name": "Top", "ai": !Global.players, "vertical": false, "reversed": false},
 		{"node": player_right, "name": "Right", "ai": !Global.players, "vertical": true, "reversed": true},
-		{"node": player_bottom, "name": "Bottom", "ai": !Global.players or !Global.playing, "vertical": false, "reversed": true},
+		{"node": player_bottom, "name": "Bottom", "ai": !Global.players and !Global.playing, "vertical": false, "reversed": true},
 		{"node": player_left, "name": "Left", "ai": !Global.players, "vertical": true, "reversed": false}
 	]
 

@@ -2,7 +2,7 @@ class_name Player
 extends Node2D
 
 signal piece_played(piece, type)
-signal piece_pressed(piece, type)
+signal piece_pressed(piece)
 signal turn_passed
 
 @export var ai: bool = false
@@ -21,7 +21,8 @@ var piece_selected: Piece = null
 func _ready():
 	update_pieces_visibility()
 
-func _input(event):						#Acciones del jugador (seleccionar pieza)
+# Acciones del jugador (seleccionar pieza)
+func _input(event):
 	if not ai and event is InputEventMouseButton and turn:
 		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			var mouse_pos = get_global_mouse_position()
@@ -37,7 +38,7 @@ func _input(event):						#Acciones del jugador (seleccionar pieza)
 						clear_possibility_areas()
 					piece.increase()
 					var type = calculate_type(piece,Global.board_extremes)
-					emit_signal("piece_pressed", piece, type)
+					emit_signal("piece_pressed", piece)
 					piece_selected = piece
 					rised = true
 					break
