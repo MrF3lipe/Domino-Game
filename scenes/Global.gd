@@ -5,3 +5,4 @@ var board_extremes: Array = []
 var playing = true
 var modified
 var players = false
+var amount = 4

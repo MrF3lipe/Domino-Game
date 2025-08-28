@@ -75,13 +75,15 @@ func setup_pieces():
 func create_players():
 	var player_scene = preload("res://scenes/player.tscn")
 	var players = [
-		{"node": player_top, "name": "Top", "ai": !Global.players, "vertical": false, "reversed": false},
-		{"node": player_right, "name": "Right", "ai": !Global.players, "vertical": true, "reversed": true},
-		{"node": player_bottom, "name": "Bottom", "ai": !Global.players and !Global.playing, "vertical": false, "reversed": true},
-		{"node": player_left, "name": "Left", "ai": !Global.players, "vertical": true, "reversed": false}
+		{"node": player_top, "name": "Top", "ai": !Global.players, "vertical": false, "reversed": false, "enabled": true},
+		{"node": player_right, "name": "Right", "ai": !Global.players, "vertical": true, "reversed": true, "enabled": Global.amount > 2},
+		{"node": player_bottom, "name": "Bottom", "ai": !Global.players and !Global.playing, "vertical": false, "reversed": true, "enabled": true},
+		{"node": player_left, "name": "Left", "ai": !Global.players, "vertical": true, "reversed": false, "enabled": Global.amount > 2}
 	]
 
 	for p in players:
+		if !p["enabled"]:
+			continue
 		var player = player_scene.instantiate()
 		player.name = "Player" + p["name"]
 		player.ai = p["ai"]
@@ -188,6 +190,9 @@ func deal_pieces():
 func start_game():
 	game_started = true
 	current_player_index = randi() % 4
+	if Global.amount == 2:
+		if current_player_index == 1 || current_player_index == 3:
+			current_player_index +=1
 	begin_player_turn(current_player_index)
 
 # Comienza el turno del jugador segun indice
@@ -224,6 +229,12 @@ func change_turn():
 		return
 
 	var next_player_index = (current_player_index + 1) % total_players
+	if Global.amount == 2:
+		if current_player_index == 0:
+			next_player_index = 2
+		else:
+			next_player_index = 0
+	
 	var players_checked = 0
 	var can_anyone_play = false
 
@@ -238,7 +249,9 @@ func change_turn():
 	if not can_anyone_play:
 		end_game(-1, false)
 		return
-
+	
+	print(current_player_index)
+	print(next_player_index)
 	end_player_turn(current_player_index)
 	current_player_index = next_player_index
 	begin_player_turn(current_player_index)

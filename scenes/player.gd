@@ -41,6 +41,7 @@ func _input(event):						#Acciones del jugador (seleccionar pieza)
 					piece_selected = piece
 					rised = true
 					break
+			
 			if !rised and piece_selected:
 				piece_selected.decrease()
 				clear_possibility_areas()

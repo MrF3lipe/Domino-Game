@@ -4,11 +4,6 @@ extends Window
 
 signal play_button_pressed
 
-# Va al menu Jugar
-func _on_play_button_pressed():
-	play_button_pressed.emit()
-	self.hide()
-
 # Va al menu opciones
 func _on_options_button_pressed():
 	var menu = load("res://scenes/options.tscn").instantiate()
@@ -18,3 +13,14 @@ func _on_options_button_pressed():
 # Sale del juego
 func _on_quit_button_pressed():
 	get_tree().quit()
+
+
+func _on_play_2_button_pressed():
+	Global.amount = 2
+	play_button_pressed.emit()
+	self.hide()
+
+func _on_play_4_button_pressed():
+	Global.amount = 4
+	play_button_pressed.emit()
+	self.hide()
