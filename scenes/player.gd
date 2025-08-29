@@ -10,7 +10,7 @@ signal turn_passed
 @export var piece_spacing: float = 60
 @export var vertical: bool = false
 @export var reversed: bool = false
-
+@export var peer_id = -1
 
 @onready var hand: Node2D = $Hand
 
@@ -67,6 +67,9 @@ func _input(event):
 						play_piece(piece, type)
 						
 						break
+
+func get_multiplayer_id():
+	return peer_id
 
 # Eliminar todos los sprites del grupo
 func clear_possibility_areas():

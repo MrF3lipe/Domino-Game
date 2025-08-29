@@ -88,7 +88,6 @@ func _on_start_pressed():
 		var min_seed = 10000
 		var max_seed = 999999
 		var seed = randi() % (max_seed - min_seed + 1) + min_seed
-		
 		if multiplayer.is_server():
 			# Llamada local en el host
 			_start_game(seed)
@@ -103,7 +102,6 @@ func _on_start_pressed():
 func rpc_start_game(seed: int):
 	_start_game(seed)
 
-# Enviar la lista de IDs a todos los clientes
 @rpc("any_peer", "reliable")
 func _update_clients_connected_players():
 	rpc("_sync_connected_players", connected_players)
@@ -117,10 +115,8 @@ func _start_game(seed: int):
 	var game = game_scene.instantiate()
 	add_child(game)
 	game.set_multiplayer_info(multiplayer.multiplayer_peer, multiplayer.is_server())
-	
-	if multiplayer.is_server():
-		game.on_play_pressed()
-		rpc("rpc_start_game", seed)
+	game.on_play_pressed()
+	game.set_connected_players(connected_players)
 	
 	game.seed_random_number_generator(seed)
 	queue_free()

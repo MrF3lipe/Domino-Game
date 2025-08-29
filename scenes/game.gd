@@ -20,6 +20,7 @@ extends Control
 
 var is_multiplayer := false
 var is_host := false
+var connected_players: Array = []
 var all_pieces: Array[Piece] = []
 var current_player_index := 0
 var board_extremes: Array = []
@@ -60,6 +61,12 @@ func dev_added(l, r, p):
 func set_multiplayer_info(peer, host_flag):
 	is_multiplayer = peer != null
 	is_host = host_flag
+	print("peer en Game:", multiplayer.multiplayer_peer)
+	print("unique_id:", multiplayer.get_unique_id())
+
+func set_connected_players(players: Array):
+	connected_players = players
+	print("Jugadores conectados recibidos: ", connected_players)
 
 # Comienza una partida
 func on_play_pressed():
@@ -68,13 +75,15 @@ func on_play_pressed():
 		setup_players()
 		start_game()
 	elif is_host:
-		print('host')
 		setup_pieces()
 		setup_players()
 		start_game()
+		distribute_hands_multiplayer()
 		var seed = randi()
-		rpc("rpc_start_game", seed)
 	else:
+		setup_pieces()
+		create_players()
+		position_players()
 		print("Esperando al host para iniciar el juego")
 
 # Prepara los jugadores
@@ -92,10 +101,10 @@ func setup_pieces():
 func create_players():
 	var player_scene = preload("res://scenes/player.tscn")
 	var players = [
-		{"node": player_top, "name": "Top", "ai": !Global.players, "vertical": false, "reversed": false, "enabled": true},
-		{"node": player_right, "name": "Right", "ai": !Global.players, "vertical": true, "reversed": true, "enabled": Global.amount > 2},
-		{"node": player_bottom, "name": "Bottom", "ai": !Global.players and !Global.playing, "vertical": false, "reversed": true, "enabled": true},
-		{"node": player_left, "name": "Left", "ai": !Global.players, "vertical": true, "reversed": false, "enabled": Global.amount > 2}
+		{"node": player_top, "name": "Top", "ai": !Global.players and !is_multiplayer, "vertical": false, "reversed": false, "enabled": true, "peer_id": -1, "position": 0},
+		{"node": player_right, "name": "Right", "ai": !Global.players and !is_multiplayer, "vertical": true, "reversed": true, "enabled": Global.amount > 2, "peer_id": -1, "position": 1},
+		{"node": player_bottom, "name": "Bottom", "ai": !Global.players and !Global.playing and !is_multiplayer, "vertical": false, "reversed": true, "enabled": true, "peer_id": multiplayer.get_unique_id(), "position": 2},
+		{"node": player_left, "name": "Left", "ai": !Global.players and !is_multiplayer, "vertical": true, "reversed": false, "enabled": Global.amount > 2, "peer_id": -1, "position": 3}
 	]
 
 	for p in players:
@@ -104,10 +113,16 @@ func create_players():
 		var player = player_scene.instantiate()
 		player.name = "Player" + p["name"]
 		player.ai = p["ai"]
+		
+		if connected_players.size() > p["position"]:
+			player.peer_id = connected_players[p["position"]]
+		else:
+			player.peer_id = -1
+		
 		player.piece_spacing = piece_spacing
 		player.vertical = p["vertical"]
 		player.reversed = p["reversed"]
-		player.hand_visible = not p["ai"]
+		player.hand_visible = player.peer_id == multiplayer.get_unique_id() 
 		p["node"].add_child(player)
 		player.piece_played.connect(_on_piece_played)
 		player.piece_pressed.connect(_on_piece_pressed)
@@ -614,3 +629,77 @@ func find_piece(id: String) -> Piece:
 			if piece.piece_id == id:
 				return piece
 	return null
+	
+# Recibe un nodo Player y una lista de IDs de piezas
+func assign_hand_to_player(player: Player, piece_ids: Array):
+	for id in piece_ids:
+		# Buscar la pieza localmente en all_pieces
+		var piece = find_piece(id)
+		if piece:
+			player.add_piece(piece)
+		else:
+			push_warning("No se encontró la pieza con id: %s" % id)
+	player.reorganize_pieces()
+
+# Host: reparte las manos y las envía a los clientes
+func distribute_hands_multiplayer():
+	if not is_host:
+		return
+	
+	var players = get_all_players()
+	var hands_data: Dictionary = {}
+	
+	print("Distribuyendo manos para jugadores: ", connected_players)
+	
+	for player in players:
+		var hand_ids: Array = []
+		for j in range(pieces_per_player):
+			if all_pieces.is_empty():
+				break
+			var piece = all_pieces.pop_back()
+			hand_ids.append(piece.id)
+			
+			if player.peer_id == multiplayer.get_unique_id():
+				player.add_piece(piece)
+		
+		hands_data[player.peer_id] = hand_ids
+		print("Mano para peer ", player.peer_id, ": ", hand_ids)
+	
+	# Enviar a todos los clientes
+	rpc("_receive_hands_multiplayer", hands_data)
+
+func get_all_players() -> Array[Player]:
+	var players: Array[Player] = []
+	var containers = [player_top, player_right, player_bottom, player_left]
+	
+	for container in containers:
+		if container.get_child_count() > 0:
+			var player = container.get_child(0) as Player
+			if player:
+				players.append(player)
+	
+	return players
+
+# Cliente: recibe las manos asignadas
+@rpc("any_peer", "reliable")
+func _receive_hands_multiplayer(hands_data: Dictionary):
+	print(multiplayer.get_unique_id())
+	var my_id = multiplayer.get_unique_id()
+	print(my_id, "recibida:", hands_data)
+	
+	var player = get_my_player()
+	if not player:
+		print("❌ Player no creado aún, esperando...")
+		# Reintentar después de un frame
+		await get_tree().process_frame
+		player = get_my_player()
+		if not player:
+			push_error("No se pudo asignar la mano, player aún no existe")
+			return
+	
+	if hands_data.has(my_id):
+		assign_hand_to_player(player, hands_data[my_id])
+		print("Mano asignada al jugador", my_id)
+
+func get_my_player() -> Player:
+	return player_bottom.get_child(0) as Player
