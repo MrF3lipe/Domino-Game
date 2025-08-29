@@ -113,10 +113,10 @@ func _sync_connected_players(list_of_ids):
 
 func _start_game(seed: int):
 	var game = game_scene.instantiate()
+	game.set_connected_players(connected_players)
 	add_child(game)
 	game.set_multiplayer_info(multiplayer.multiplayer_peer, multiplayer.is_server())
 	game.on_play_pressed()
-	game.set_connected_players(connected_players)
 	
 	game.seed_random_number_generator(seed)
 	queue_free()

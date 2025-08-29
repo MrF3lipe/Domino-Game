@@ -66,7 +66,8 @@ func set_multiplayer_info(peer, host_flag):
 
 func set_connected_players(players: Array):
 	connected_players = players
-	print("Jugadores conectados recibidos: ", connected_players)
+	if is_host:
+		print("Jugadores conectados recibidos: ", connected_players)
 
 # Comienza una partida
 func on_play_pressed():
@@ -77,8 +78,8 @@ func on_play_pressed():
 	elif is_host:
 		setup_pieces()
 		setup_players()
-		start_game()
 		distribute_hands_multiplayer()
+		start_game()
 		var seed = randi()
 	else:
 		setup_pieces()
@@ -118,6 +119,8 @@ func create_players():
 			player.peer_id = connected_players[p["position"]]
 		else:
 			player.peer_id = -1
+			
+		
 		
 		player.piece_spacing = piece_spacing
 		player.vertical = p["vertical"]
@@ -194,6 +197,8 @@ func generate_all_pieces():
 
 # Reparte la piezas
 func deal_pieces():				
+	if multiplayer:
+		return
 	var player_configs = [
 		{"node": player_top},
 		{"node": player_right},
@@ -223,6 +228,8 @@ func deal_pieces():
 func start_game():
 	game_started = true
 	current_player_index = randi() % 4
+	print("Turno De:",current_player_index)
+	
 	if Global.amount == 2:
 		if current_player_index == 1 || current_player_index == 3:
 			current_player_index +=1
@@ -647,11 +654,14 @@ func distribute_hands_multiplayer():
 		return
 	
 	var players = get_all_players()
+	while players.size() != 4:
+		players = get_all_players()
 	var hands_data: Dictionary = {}
 	
-	print("Distribuyendo manos para jugadores: ", connected_players)
+	print("Distribuyendo manos para jugadores: ", players)
 	
 	for player in players:
+		print(player.peer_id)
 		var hand_ids: Array = []
 		for j in range(pieces_per_player):
 			if all_pieces.is_empty():
