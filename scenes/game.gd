@@ -240,6 +240,9 @@ func deal_pieces():
 
 # Comienza el juego
 func start_game():
+	if is_multiplayer and not is_host:
+		return
+	
 	game_started = true
 	current_player_index = randi() % 4
 	
@@ -248,6 +251,8 @@ func start_game():
 			current_player_index +=1
 	
 	print("Turno del jugador ", current_player_index)
+	if is_host:
+		rpc("_set_starting_player", current_player_index)
 	begin_player_turn(current_player_index)
 
 # Comienza el turno del jugador segun indice
@@ -384,6 +389,13 @@ func _on_piece_played(piece: Piece, type: String):
 	board.add_child(piece)
 	update_board_extremes(piece, type)
 	change_turn()
+	
+	print("Pieza jugada: ", piece.left, ":", piece.right)
+	# Esto esta funcionando regulero es por aqui mas o menos el problema
+	if is_multiplayer and get_player_by_index(current_player_index).peer_id == multiplayer.get_unique_id():
+		for peer_id in multiplayer.get_peers():
+			if peer_id != multiplayer.get_unique_id():
+				rpc_id(peer_id, "rpc_play_piece", piece.id, type, multiplayer.get_unique_id())
 
 # Coloca los Sprites en la posiciones sugeridas
 func _on_piece_pressed(piece: Piece):
@@ -629,19 +641,26 @@ func seed_random_number_generator(seed_value: int):
 	seed(seed_value)
 
 @rpc("any_peer", "reliable")
-func rpc_play_piece(id: String, type: String):
-	var piece = find_piece(id)
+func rpc_play_piece(id: String, type: String, player_id):
+	var piece = find_piece_on_player(player_id, id)
 	if piece:
+		print('pieza recibida en ', player_id, ":", piece)
 		_on_piece_played(piece, type)
 	else:
-		print("❌ No se encontró la pieza con id: %s" % id)
+		print('⚠️ Pieza no encontrada en rpc_play_piece: ', id, ' de ', player_id)
 
-func find_piece(id: String) -> Piece:
-	for player in $Players.get_children():
+func find_piece_on_player(peer_id: int, piece_id: String) -> Piece:
+	for player_node in [$Players/PlayerTop, $Players/PlayerRight, $Players/PlayerBottom, $Players/PlayerLeft]:
+		if player_node.get_child_count() == 0:
+			continue
+		var player = player_node.get_child(0) as Player
+		if player.peer_id != peer_id:
+			continue
 		for piece in player.pieces:
-			if piece.piece_id == id:
+			if piece.id == piece_id:
 				return piece
 	return null
+
 	
 # Recibe un nodo Player y una lista de IDs de piezas
 func assign_hand_to_player(player: Player, piece_ids: Array):
@@ -676,7 +695,6 @@ func distribute_hands_multiplayer():
 	
 	print("Distribuyendo manos para ", connected_players.size(), " jugadores...")
 	
-	# Pequeña espera para que los clientes se inicialicen
 	await get_tree().create_timer(0.5).timeout
 	
 	var players = get_all_players()
@@ -737,3 +755,8 @@ func confirm_hands_received(client_id: int):
 		if received_count >= total_players:
 			print("✅ Todas las manos recibidas! Iniciando juego...")
 			start_game()
+
+@rpc("any_peer", "reliable")
+func _set_starting_player(start_index: int):
+	current_player_index = start_index
+	begin_player_turn(current_player_index)

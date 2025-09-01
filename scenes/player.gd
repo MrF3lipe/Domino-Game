@@ -163,14 +163,11 @@ func play_piece(piece: Piece, type: String):			#Juega la pieza seleccionada
 		pieces.erase(piece)
 		hand.remove_child(piece)
 		
-		if multiplayer.is_server():
-			emit_signal("piece_played", piece, type)
-		else:
-			rpc_id(1, "rpc_play_piece", piece.id, type)
-			
+		emit_signal("piece_played", piece, type)
 		reorganize_pieces()
 
-func calculate_hand_points() -> int:					#Calcula los puntos en caso de empate
+# Calcula los puntos en caso de empate
+func calculate_hand_points() -> int:
 	var total = 0
 	for piece in pieces:
 		total += piece.left + piece.right
@@ -179,7 +176,8 @@ func calculate_hand_points() -> int:					#Calcula los puntos en caso de empate
 	
 	return total
 
-func can_play(left_value: int, right_value: int) -> bool:		#calcula si el jugador tiene algun movimiento valido
+# Calcula si el jugador tiene algun movimiento valido
+func can_play(left_value: int, right_value: int) -> bool:
 	for piece in pieces:
 		if piece.left == left_value or piece.right == left_value or \
 		   piece.left == right_value or piece.right == right_value:
