@@ -42,7 +42,6 @@ func _ready():
 	await get_tree().process_frame
 	
 	if not is_multiplayer:
-		print('lo puso:' , multiplayer.get_unique_id())
 		pregame.visible = true
 		pregame.play_pressed.connect(on_play_pressed)
 		pregame.active_dev.connect(show_dev_menu)
@@ -119,9 +118,9 @@ func create_players():
 	var player_scene = preload("res://scenes/player.tscn")
 	var players = [
 		{"node": player_top, "name": "Top", "ai": !Global.players and !is_multiplayer, "vertical": false, "reversed": false, "enabled": true, "peer_id": -1, "position": 0},
-		{"node": player_right, "name": "Right", "ai": !Global.players and !is_multiplayer, "vertical": true, "reversed": true, "enabled": Global.amount > 2, "peer_id": -1, "position": 1},
+		{"node": player_right, "name": "Right", "ai": !Global.players and !is_multiplayer, "vertical": true, "reversed": true, "enabled": Global.amount > 2, "peer_id": -1, "position": 3},
 		{"node": player_bottom, "name": "Bottom", "ai": !Global.players and !Global.playing and !is_multiplayer, "vertical": false, "reversed": true, "enabled": true, "peer_id": multiplayer.get_unique_id(), "position": 2},
-		{"node": player_left, "name": "Left", "ai": !Global.players and !is_multiplayer, "vertical": true, "reversed": false, "enabled": Global.amount > 2, "peer_id": -1, "position": 3}
+		{"node": player_left, "name": "Left", "ai": !Global.players and !is_multiplayer, "vertical": true, "reversed": false, "enabled": Global.amount > 2, "peer_id": -1, "position": 1}
 	]
 
 	for p in players:
@@ -135,13 +134,16 @@ func create_players():
 			player.peer_id = connected_players[p["position"]]
 		else:
 			player.peer_id = -1
-			
-		
 		
 		player.piece_spacing = piece_spacing
 		player.vertical = p["vertical"]
 		player.reversed = p["reversed"]
-		player.hand_visible = player.peer_id == multiplayer.get_unique_id() 
+		
+		if not is_multiplayer:
+			player.hand_visible = not p["ai"]
+		else:
+			player.hand_visible = player.peer_id == multiplayer.get_unique_id() 
+		
 		p["node"].add_child(player)
 		player.piece_played.connect(_on_piece_played)
 		player.piece_pressed.connect(_on_piece_pressed)
@@ -212,8 +214,8 @@ func generate_all_pieces():
 			all_pieces.append(piece)
 
 # Reparte la piezas
-func deal_pieces():				
-	if multiplayer:
+func deal_pieces():
+	if is_multiplayer:
 		return
 	var player_configs = [
 		{"node": player_top},
@@ -226,13 +228,9 @@ func deal_pieces():
 		var config = player_configs[i]
 		var player = config["node"].get_child(0) as Player
 		
-		if not player:
-			push_error("Jugador no encontrado en ", config["node"].name)
-			continue
 			
 		for j in range(pieces_per_player):
 			if all_pieces.is_empty():
-				push_error("No hay suficientes fichas")
 				return
 				
 			var piece = all_pieces.pop_back()
@@ -307,14 +305,12 @@ func change_turn():
 		end_game(-1, false)
 		return
 	
-	print(current_player_index)
-	print(next_player_index)
 	end_player_turn(current_player_index)
 	current_player_index = next_player_index
 	begin_player_turn(current_player_index)
 
 # Finaliza el juego
-func end_game(winning_player_index: int, by_empty_hand: bool):		
+func end_game(winning_player_index: int, by_empty_hand: bool):
 	game_ended = true
 
 	if by_empty_hand:

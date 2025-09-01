@@ -43,6 +43,7 @@ offset_right = 400.0
 offset_bottom = 371.0
 text = "Salir"
 
+[connection signal="pressed" from="Play4Button" to="." method="_on_play_4_button_pressed"]
 [connection signal="pressed" from="Multiplayer" to="." method="_on_multiplayer_pressed"]
 [connection signal="pressed" from="OptionsButton" to="." method="_on_options_button_pressed"]
 [connection signal="pressed" from="QuitButton" to="." method="_on_quit_button_pressed"]
