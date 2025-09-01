@@ -47,7 +47,7 @@ func _ready():
 		pregame.play_pressed.connect(on_play_pressed)
 		pregame.active_dev.connect(show_dev_menu)
 	else:
-		print('Modo multijugador - ID:', multiplayer.get_unique_id(), ' - Es host:', is_host)
+		pregame.visible = false
 
 func show_dev_menu():
 	dev.visible = true
@@ -102,7 +102,6 @@ func client_ready(client_id: int):
 		if clients_ready >= total_players:
 			print("Todos listos! Distribuyendo manos...")
 			distribute_hands_multiplayer()
-			start_game()
 
 # Prepara los jugadores
 func setup_players():
@@ -249,7 +248,8 @@ func start_game():
 	if Global.amount == 2:
 		if current_player_index == 1 || current_player_index == 3:
 			current_player_index +=1
-
+	
+	print("Turno del jugador ", current_player_index)
 	begin_player_turn(current_player_index)
 
 # Comienza el turno del jugador segun indice
@@ -629,13 +629,6 @@ func _notification(what):
 func adjust_layout():
 	pass
 
-@rpc("any_peer", "reliable")
-func rpc_start_game(seed: int):
-	seed_random_number_generator(seed)
-	setup_pieces()
-	setup_players()
-	start_game()
-
 func seed_random_number_generator(seed_value: int):
 	seed(seed_value)
 
@@ -707,7 +700,9 @@ func distribute_hands_multiplayer():
 		print("Mano para peer ", player.peer_id, ": ", hand_ids)
 
 	print("📤 Enviando las manos a todos los clientes...")
+	set_meta("hands_received_count", 1)
 	rpc("_receive_all_hands", all_hands_data)
+	
 
 func get_all_players() -> Array[Player]:
 	var players: Array[Player] = []
@@ -732,15 +727,17 @@ func _receive_all_hands(all_hands_data: Dictionary):
 		assign_hand_to_player(player, all_hands_data[player.get_multiplayer_id()])
 		player.reorganize_pieces()
 	
-	Global.all_players_hands = all_hands_data.duplicate() 
-
-func get_my_player() -> Player:
-	var containers = [player_top, player_right, player_bottom, player_left]
-	var my_id = multiplayer.get_unique_id()
+	Global.all_players_hands = all_hands_data.duplicate()
+	print("Cliente ", my_id, " confirmando recepción de manos al host")
+	rpc_id(1, "confirm_hands_received", my_id)
 	
-	for container in containers:
-		if container.get_child_count() > 0:
-			var player = container.get_child(0) as Player
-			if player and player.peer_id == my_id:
-				return player
-	return null
+@rpc("any_peer", "reliable")
+func confirm_hands_received(client_id: int):
+	if is_host:
+		var received_count = get_meta("hands_received_count", 0) + 1
+		set_meta("hands_received_count", received_count)
+		var total_players = connected_players.size()
+
+		if received_count >= total_players:
+			print("✅ Todas las manos recibidas! Iniciando juego...")
+			start_game()

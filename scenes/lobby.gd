@@ -89,14 +89,8 @@ func _on_start_pressed():
 		var max_seed = 999999
 		var seed = randi() % (max_seed - min_seed + 1) + min_seed
 		if multiplayer.is_server():
-			# Llamada local en el host
 			_start_game(seed)
-			# RPC a todos los demás peers
 			rpc("rpc_start_game", seed)
-		else:
-			push_warning("Solo el host puede iniciar la partida")
-	else:
-		push_warning("No todos los jugadores están conectados")
 
 @rpc("any_peer", "reliable")
 func rpc_start_game(seed: int):
@@ -112,10 +106,11 @@ func _sync_connected_players(list_of_ids):
 	update_lobby_info()
 
 func _start_game(seed: int):
+	lobby_window.visible = false
+	main_window.visible = false
 	var game = game_scene.instantiate()
 	game.set_connected_players(connected_players)
 	add_child(game)
 	game.set_multiplayer_info(multiplayer.multiplayer_peer, multiplayer.is_server())
 	game.on_play_pressed()
-	
 	game.seed_random_number_generator(seed)
