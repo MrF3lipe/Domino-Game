@@ -119,4 +119,3 @@ func _start_game(seed: int):
 	game.on_play_pressed()
 	
 	game.seed_random_number_generator(seed)
-	queue_free()

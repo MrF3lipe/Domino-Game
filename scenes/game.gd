@@ -42,9 +42,12 @@ func _ready():
 	await get_tree().process_frame
 	
 	if not is_multiplayer:
+		print('lo puso:' , multiplayer.get_unique_id())
 		pregame.visible = true
 		pregame.play_pressed.connect(on_play_pressed)
 		pregame.active_dev.connect(show_dev_menu)
+	else:
+		print('Modo multijugador - ID:', multiplayer.get_unique_id(), ' - Es host:', is_host)
 
 func show_dev_menu():
 	dev.visible = true
@@ -61,8 +64,6 @@ func dev_added(l, r, p):
 func set_multiplayer_info(peer, host_flag):
 	is_multiplayer = peer != null
 	is_host = host_flag
-	print("peer en Game:", multiplayer.multiplayer_peer)
-	print("unique_id:", multiplayer.get_unique_id())
 
 func set_connected_players(players: Array):
 	connected_players = players
@@ -78,14 +79,30 @@ func on_play_pressed():
 	elif is_host:
 		setup_pieces()
 		setup_players()
-		distribute_hands_multiplayer()
-		start_game()
-		var seed = randi()
+		set_meta("clients_ready", 1)
 	else:
-		setup_pieces()
 		create_players()
 		position_players()
-		print("Esperando al host para iniciar el juego")
+		print("Cliente listo, notificando al host...")
+		rpc_id(1, "client_ready", multiplayer.get_unique_id())
+
+# El host recibe la notificación de clientes listos
+@rpc("any_peer", "reliable")
+func client_ready(client_id: int):
+	if is_host:
+		print("Cliente ", client_id, " está listo")
+		
+		var clients_ready = get_meta("clients_ready", 0) + 1
+		set_meta("clients_ready", clients_ready)
+		
+		var total_players = connected_players.size()
+		print("Jugadores listos: ", clients_ready, "/", total_players)
+		
+		# Cuando todos estén listos, distribuir manos
+		if clients_ready >= total_players:
+			print("Todos listos! Distribuyendo manos...")
+			distribute_hands_multiplayer()
+			start_game()
 
 # Prepara los jugadores
 func setup_players():
@@ -228,11 +245,11 @@ func deal_pieces():
 func start_game():
 	game_started = true
 	current_player_index = randi() % 4
-	print("Turno De:",current_player_index)
 	
 	if Global.amount == 2:
 		if current_player_index == 1 || current_player_index == 3:
 			current_player_index +=1
+
 	begin_player_turn(current_player_index)
 
 # Comienza el turno del jugador segun indice
@@ -628,7 +645,7 @@ func rpc_play_piece(id: String, type: String):
 	if piece:
 		_on_piece_played(piece, type)
 	else:
-		push_warning("❌ No se encontró la pieza con id: %s" % id)
+		print("❌ No se encontró la pieza con id: %s" % id)
 
 func find_piece(id: String) -> Piece:
 	for player in $Players.get_children():
@@ -639,44 +656,58 @@ func find_piece(id: String) -> Piece:
 	
 # Recibe un nodo Player y una lista de IDs de piezas
 func assign_hand_to_player(player: Player, piece_ids: Array):
+	
 	for id in piece_ids:
-		# Buscar la pieza localmente en all_pieces
-		var piece = find_piece(id)
-		if piece:
-			player.add_piece(piece)
-		else:
-			push_warning("No se encontró la pieza con id: %s" % id)
-	player.reorganize_pieces()
+		var piece_found = false
+
+		for piece in all_pieces:
+			if piece.id == id:
+				player.add_piece(piece)
+				piece_found = true
+				if is_host:
+					all_pieces.erase(piece)
+				break
+		
+		if not piece_found:
+			var parts = id.split("-")
+			if parts.size() == 2:
+				var left = int(parts[0])
+				var right = int(parts[1])
+				var new_piece = preload("res://scenes/piece.tscn").instantiate()
+				new_piece.set_values(left, right, piece_scale)
+				new_piece.id = id
+				player.add_piece(new_piece)
+	
+	print("Fichas asignadas al jugador ", player.peer_id, " en id ", multiplayer.get_unique_id())
 
 # Host: reparte las manos y las envía a los clientes
 func distribute_hands_multiplayer():
 	if not is_host:
 		return
 	
-	var players = get_all_players()
-	while players.size() != 4:
-		players = get_all_players()
-	var hands_data: Dictionary = {}
+	print("Distribuyendo manos para ", connected_players.size(), " jugadores...")
 	
-	print("Distribuyendo manos para jugadores: ", players)
+	# Pequeña espera para que los clientes se inicialicen
+	await get_tree().create_timer(0.5).timeout
+	
+	var players = get_all_players()
+	var all_hands_data: Dictionary = {}
 	
 	for player in players:
-		print(player.peer_id)
 		var hand_ids: Array = []
 		for j in range(pieces_per_player):
 			if all_pieces.is_empty():
 				break
 			var piece = all_pieces.pop_back()
 			hand_ids.append(piece.id)
-			
-			if player.peer_id == multiplayer.get_unique_id():
-				player.add_piece(piece)
-		
-		hands_data[player.peer_id] = hand_ids
+
+			player.add_piece(piece)
+
+		all_hands_data[player.peer_id] = hand_ids
 		print("Mano para peer ", player.peer_id, ": ", hand_ids)
-	
-	# Enviar a todos los clientes
-	rpc("_receive_hands_multiplayer", hands_data)
+
+	print("📤 Enviando las manos a todos los clientes...")
+	rpc("_receive_all_hands", all_hands_data)
 
 func get_all_players() -> Array[Player]:
 	var players: Array[Player] = []
@@ -692,24 +723,24 @@ func get_all_players() -> Array[Player]:
 
 # Cliente: recibe las manos asignadas
 @rpc("any_peer", "reliable")
-func _receive_hands_multiplayer(hands_data: Dictionary):
-	print(multiplayer.get_unique_id())
+func _receive_all_hands(all_hands_data: Dictionary):
 	var my_id = multiplayer.get_unique_id()
-	print(my_id, "recibida:", hands_data)
+	print("Cliente ", my_id, " recibió todas las manos: ", all_hands_data.keys())
+
+	for player in get_all_players():
+		player.get_multiplayer_id()
+		assign_hand_to_player(player, all_hands_data[player.get_multiplayer_id()])
+		player.reorganize_pieces()
 	
-	var player = get_my_player()
-	if not player:
-		print("❌ Player no creado aún, esperando...")
-		# Reintentar después de un frame
-		await get_tree().process_frame
-		player = get_my_player()
-		if not player:
-			push_error("No se pudo asignar la mano, player aún no existe")
-			return
-	
-	if hands_data.has(my_id):
-		assign_hand_to_player(player, hands_data[my_id])
-		print("Mano asignada al jugador", my_id)
+	Global.all_players_hands = all_hands_data.duplicate() 
 
 func get_my_player() -> Player:
-	return player_bottom.get_child(0) as Player
+	var containers = [player_top, player_right, player_bottom, player_left]
+	var my_id = multiplayer.get_unique_id()
+	
+	for container in containers:
+		if container.get_child_count() > 0:
+			var player = container.get_child(0) as Player
+			if player and player.peer_id == my_id:
+				return player
+	return null

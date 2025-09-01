@@ -6,3 +6,4 @@ var playing = true
 var modified
 var players = false
 var amount = 4
+var all_players_hands: Dictionary = {}
